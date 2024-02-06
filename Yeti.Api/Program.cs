@@ -22,7 +22,7 @@ var container = new Container(services =>
 {
     services.AddLogging(config =>
     {
-        config.SetMinimumLevel(LogLevel.Debug);
+        config.SetMinimumLevel(LogLevel.Information);
         config.AddSimpleConsole();
     });
 
@@ -45,7 +45,7 @@ public class FragmentProvider(ILogger<FragmentProvider> logger, WriterContext co
 {
     public Task<List<Fragment>> ByWriterId(long writerId)
     {
-        logger.LogDebug("get fragments for {writer_id}", writerId);
+        logger.LogInformation("get fragments for {writer_id}", writerId);
         return context.Fragments.Where(x => x.WriterId == writerId).ToListAsync();
     }
 }
