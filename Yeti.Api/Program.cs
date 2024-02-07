@@ -1,51 +1,57 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Lamar;
+﻿using Lamar;
+using Lamar.Microsoft.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 
 using Yeti.Db;
-using Yeti.Db.Model;
 
-// This configuration object does nothing at this point. Eventually, it should be used to bring
-// in things like db connection strings, passwords, whatever.
 var configuration = new ConfigurationBuilder()
+    .AddJsonFile(Path.Join(Environment.CurrentDirectory, "appsettings.json"), optional: false)
     .AddEnvironmentVariables()
-    .AddJsonFile(Path.Join(Environment.CurrentDirectory, "appsettings.json"))
+    .AddCommandLine(args)
     .Build();
 
-// This is the application container. It manages lifetimes and provides dependency injection.
-// Ordinarily, you wouldn't configure a bare container like this; you would configure a WEB
-// APPLICATION--however, I'm in a hurry and I don't actually need a web application for this
-// demo.
-var container = new Container(services => 
+// As far as I can tell, at no point AFTER the web application has been created does it attempt to
+// read the environment variable describing its environment. Setting this before calling
+// Environment.IsDevelopment() but after creating the application builder accomplishes NOTHING.
+if (configuration.GetValue<string?>("Environment") is string environmentName)
+{
+    Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", environmentName);
+}
+
+var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddConfiguration(configuration);
+builder.Host.UseLamar().ConfigureContainer<ServiceRegistry>(ConfigureServices);
+
+var application = ConfigureApplication(builder.Build());
+// This is a hack to ensure that my "database" includes seed data.
+await application.Services.GetRequiredService<WriterContext>().Database.EnsureCreatedAsync();
+application.Logger.LogInformation("startup complete");
+await application.RunAsync();
+
+WebApplication ConfigureApplication(WebApplication application)
+{
+    if (application.Environment.IsDevelopment())
+    {
+        application.UseSwagger();
+        application.UseSwaggerUI();
+    }
+
+    application.MapControllers();
+    return application;
+}
+
+void ConfigureServices(ServiceRegistry services)
 {
     services.AddLogging(config =>
     {
-        config.SetMinimumLevel(LogLevel.Information);
         config.AddSimpleConsole();
+        config.SetMinimumLevel(LogLevel.Information);
+        config.AddConfiguration(configuration);
     });
 
     services.AddDbContextPool<WriterContext>(config => config.UseInMemoryDatabase("yeti"));
-});
 
-// This is a hack to ensure that my "database" includes seed data.
-await container.GetInstance<WriterContext>().Database.EnsureCreatedAsync();
-
-var provider = container.GetService<FragmentProvider>()
-    ?? throw new Exception("wtf?");
-
-foreach (var fragment in await provider.ByWriterId(1))
-{
-    Console.WriteLine(fragment.Content);
-}
-
-// This class is for demonstration purposes only and wouldn't normally exist.
-public class FragmentProvider(ILogger<FragmentProvider> logger, WriterContext context)
-{
-    public Task<List<Fragment>> ByWriterId(long writerId)
-    {
-        logger.LogInformation("get fragments for {writer_id}", writerId);
-        return context.Fragments.Where(x => x.WriterId == writerId).ToListAsync();
-    }
+    services.AddControllers();
+    services.AddEndpointsApiExplorer();
+    services.AddSwaggerGen();
 }

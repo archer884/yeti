@@ -43,6 +43,7 @@ public class WriterContext(DbContextOptions<WriterContext> options)
             WriterId = 1,
             ManuscriptId = 1,
             Content = "By the shore of Gitche Gumee,\nBy the shining Big-Sea-Water,\nAt the doorway of his wigwam,\nIn the pleasant Summer morning,\nHiawatha stood and waited.",
+            SortBy = 1.0,
         });
     }
 }
