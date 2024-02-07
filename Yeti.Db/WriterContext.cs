@@ -38,6 +38,7 @@ public class WriterContext(DbContextOptions<WriterContext> options)
         {
             Id = 1,
             Username = "longfellow",
+            AuthorName = "H. Wadsworth Longfellow",
         });
 
         builder.Entity<Manuscript>().HasData(new Manuscript
@@ -45,7 +46,7 @@ public class WriterContext(DbContextOptions<WriterContext> options)
             Id = 1,
             WriterId = 1,
             Title = "The Song of Hiawatha",
-            Summary = "An old poem",
+            Blurb = "An old poem",
         });
 
         var deletedFragment = new Fragment
