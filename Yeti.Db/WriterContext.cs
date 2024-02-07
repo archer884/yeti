@@ -9,6 +9,7 @@ public class WriterContext(DbContextOptions<WriterContext> options)
     public DbSet<Writer> Writers { get; set; }
     public DbSet<Manuscript> Manuscripts { get; set; }
     public DbSet<Fragment> Fragments { get; set; }
+    public DbSet<Tag> Tags { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -17,6 +18,7 @@ public class WriterContext(DbContextOptions<WriterContext> options)
         builder.Entity<Manuscript>(e =>
         {
             e.HasMany(x => x.Fragments).WithOne(x => x.Manuscript);
+            e.HasIndex(x => x.Title);
             e.HasIndex(x => x.SoftDelete);
         });
      
@@ -26,6 +28,8 @@ public class WriterContext(DbContextOptions<WriterContext> options)
             e.HasOne(x => x.Manuscript).WithMany(x => x.Fragments);
             e.HasIndex(x => x.SoftDelete);
         });
+
+        builder.Entity<Tag>().HasIndex(x => x.Value).IsUnique();
 
         Seed(builder);
         

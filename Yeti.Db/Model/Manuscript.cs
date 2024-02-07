@@ -8,6 +8,8 @@ public class Manuscript
     public string? Blurb { get; set; }
     public bool SoftDelete { get; set; }
 
-    public ICollection<Fragment> Fragments { get; set; } = [];
+    public List<Fragment> Fragments { get; set; } = [];
+    public List<Tag> Tags { get; set; } = [];
+    
     public Writer Writer { get; set; } = null!;
 }

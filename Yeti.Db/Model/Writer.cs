@@ -6,5 +6,5 @@ public class Writer
     public string Username { get; init; } = null!;
     public string? AuthorName { get; init; }
 
-    public virtual ICollection<Manuscript> Manuscripts { get; set; } = [];
+    public List<Manuscript> Manuscripts { get; set; } = [];
 }
