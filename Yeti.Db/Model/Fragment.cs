@@ -13,6 +13,8 @@ public class Fragment
     /// </summary>
     public double SortBy { get; set; }
 
+    public bool SoftDelete { get; set; }
+
     public Manuscript Manuscript { get; set; } = null!;
     public Writer Writer { get; set; } = null!;
 }

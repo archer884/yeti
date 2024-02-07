@@ -8,14 +8,18 @@ public class FragmentSummaryProvider(WriterContext context)
 {
     public Task<List<FragmentSummary>> ByManuscriptId(long id)
     {
-        return context.Fragments.Where(x => x.ManuscriptId == id).Select(x => new FragmentSummary
-        {
-            Id = x.Id,
-            WriterId = x.WriterId,
-            ManuscriptId = x.ManuscriptId,
-            Heading = x.Heading,
-            Length = x.Content.Length,
-            SortBy = x.SortBy,
-        }).ToListAsync();
+        return context.Fragments
+            .Where(x => !x.SoftDelete)
+            .Where(x => x.ManuscriptId == id)
+            .Select(x => new FragmentSummary
+            {
+                Id = x.Id,
+                WriterId = x.WriterId,
+                ManuscriptId = x.ManuscriptId,
+                Heading = x.Heading,
+                Length = x.Content.Length,
+                SortBy = x.SortBy,
+            })
+            .ToListAsync();
     }
 }
