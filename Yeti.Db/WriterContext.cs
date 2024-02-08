@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+
 using Yeti.Db.Model;
 
 namespace Yeti.Db;
