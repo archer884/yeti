@@ -1,6 +1,6 @@
 namespace Yeti.Db.Model;
 
-public class Manuscript
+public class Manuscript : Tracked
 {
     public long Id { get; set; }
     public long WriterId { get; set; }

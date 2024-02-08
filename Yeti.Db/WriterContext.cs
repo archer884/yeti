@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 using Yeti.Db.Model;
 
@@ -11,6 +12,16 @@ public class WriterContext(DbContextOptions<WriterContext> options)
     public DbSet<Manuscript> Manuscripts { get; set; }
     public DbSet<Fragment> Fragments { get; set; }
     public DbSet<Tag> Tags { get; set; }
+
+    public override EntityEntry<TEntity> Update<TEntity>(TEntity entity)
+    {
+        if (entity is Tracked tracked)
+        {
+            tracked.Updated = DateTimeOffset.Now;
+        }
+
+        return base.Update(entity);
+    }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

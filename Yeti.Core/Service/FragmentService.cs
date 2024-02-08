@@ -37,17 +37,20 @@ public class FragmentService(WriterContext context, FragmentSummaryProvider frag
             return null;
         }
 
-        fragment.Heading = update.Heading;
-        fragment.Content = update.Content;
-        
-        if (update.SortBy.HasValue)
+        fragment.SoftDelete = true;
+        Fragment updated = new()
         {
-            fragment.SortBy = update.SortBy.Value;
-        }
+            WriterId = fragment.WriterId,
+            ManuscriptId = fragment.ManuscriptId,
+            Heading = update.Heading,
+            Content = update.Content,
+            SortBy = update.SortBy ?? fragment.SortBy,
+        };
 
         context.Update(fragment);
+        var result = await context.AddAsync(updated);
         await context.SaveChangesAsync();
-        return new FragmentSummary(fragment);
+        return new FragmentSummary(result.Entity);
     }
 
     public async Task<FragmentSummary?> DeleteFragment(DeleteFragment delete)
