@@ -14,14 +14,13 @@ public class WriterContext(DbContextOptions<WriterContext> options)
     protected override void OnModelCreating(ModelBuilder builder)
     {
         builder.Entity<Writer>().HasMany(x => x.Manuscripts).WithOne(x => x.Writer);
-        
+
         builder.Entity<Manuscript>(e =>
         {
             e.HasMany(x => x.Fragments).WithOne(x => x.Manuscript);
             e.HasIndex(x => x.Title);
             e.HasIndex(x => x.SoftDelete);
         });
-     
         
         builder.Entity<Fragment>(e =>
         {
