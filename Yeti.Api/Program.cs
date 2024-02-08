@@ -1,7 +1,9 @@
-﻿using Lamar;
+﻿using System.Text;
+using Lamar;
 using Lamar.Microsoft.DependencyInjection;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-
+using Microsoft.IdentityModel.Tokens;
 using Yeti.Db;
 
 var configuration = new ConfigurationBuilder()
@@ -33,10 +35,15 @@ WebApplication ConfigureApplication(WebApplication application)
     if (application.Environment.IsDevelopment())
     {
         application.UseSwagger();
-        application.UseSwaggerUI();
+        application.UseSwaggerUI(s =>
+        {
+            s.EnablePersistAuthorization();
+        });
     }
 
     application.MapControllers();
+    application.UseAuthentication();
+    application.UseAuthorization();
     return application;
 }
 
@@ -51,6 +58,28 @@ void ConfigureServices(ServiceRegistry services)
 
     services.AddDbContextPool<WriterContext>(config => config.UseInMemoryDatabase("yeti"));
 
+    services
+        .AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            var key = configuration["Jwt:Key"] ?? throw new Exception("missing jwt signing key");
+            options.TokenValidationParameters = new()
+            {
+                ValidIssuer = configuration["Jwt:Issuer"],
+                // ValidAudience = configuration["Jwt:Audience"],
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
+                ValidateAudience = false,
+                ValidateLifetime = false,
+                ValidateIssuerSigningKey = true,
+            };
+        });
+
+    services.AddAuthorization();
     services.AddControllers();
     services.AddEndpointsApiExplorer();
     services.AddSwaggerGen();

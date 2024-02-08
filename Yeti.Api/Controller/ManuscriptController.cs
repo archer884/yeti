@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using Yeti.Core.Model;
@@ -5,8 +6,9 @@ using Yeti.Core.Service;
 
 namespace Yeti.Api.Controller;
 
-[Route("[controller]")]
+[Authorize]
 [ApiController]
+[Route("[controller]")]
 public class ManuscriptController(ManuscriptService service) : ControllerBase
 {
     [HttpPost]
@@ -25,23 +27,5 @@ public class ManuscriptController(ManuscriptService service) : ControllerBase
     public async Task<ActionResult<ManuscriptSummary?>> Delete([FromBody] DeleteManuscript delete)
     {
         return await service.DeleteManuscript(delete);
-    }
-
-    /// <summary>
-    /// Retrieves a manuscript summary.
-    /// </summary>
-    [HttpGet("{id}")]
-    public async Task<ActionResult<ManuscriptSummary?>> Get(long id)
-    {
-        return await service.ManuscriptSummary(id);
-    }
-
-    /// <summary>
-    /// Retrieves a summary of fragments for a manuscript.
-    /// </summary>
-    [HttpGet("fragments/{id}")]
-    public async Task<ActionResult<List<FragmentSummary>>> GetFragments(long id)
-    {
-        return await service.FragmentSummaries(id);
     }
 }

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using Yeti.Core.Model;
@@ -5,8 +6,9 @@ using Yeti.Core.Service;
 
 namespace Yeti.Api.Controller;
 
-[Route("[controller]")]
+[Authorize]
 [ApiController]
+[Route("[controller]")]
 public class TagController(TagService service) : ControllerBase
 {
     [HttpPost("add")]
