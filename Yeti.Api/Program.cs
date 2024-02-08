@@ -70,12 +70,13 @@ void ConfigureServices(ServiceRegistry services)
             var key = configuration["Jwt:Key"] ?? throw new Exception("missing jwt signing key");
             options.TokenValidationParameters = new()
             {
-                ValidIssuer = configuration["Jwt:Issuer"],
-                // ValidAudience = configuration["Jwt:Audience"],
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
                 ValidateAudience = false,
-                ValidateLifetime = false,
+                // ValidAudience = configuration["Jwt:Audience"],
+                ValidateIssuer = true,
+                ValidIssuer = configuration["Jwt:Issuer"],
                 ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
+                ValidateLifetime = false,
             };
         });
 
