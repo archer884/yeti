@@ -4,8 +4,11 @@ using Lamar.Microsoft.DependencyInjection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using Yeti.Api.Config;
 using Yeti.Db;
 
+var isDevelopment = false;
 var configuration = new ConfigurationBuilder()
     .AddJsonFile(Path.Join(Environment.CurrentDirectory, "appsettings.json"), optional: false)
     .AddEnvironmentVariables()
@@ -18,6 +21,7 @@ var configuration = new ConfigurationBuilder()
 if (configuration.GetValue<string?>("Environment") is string environmentName)
 {
     Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", environmentName);
+    isDevelopment = environmentName == "Development";
 }
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,6 +32,13 @@ var application = ConfigureApplication(builder.Build());
 // This is a hack to ensure that my "database" includes seed data.
 await application.Services.GetRequiredService<WriterContext>().Database.EnsureCreatedAsync();
 application.Logger.LogInformation("startup complete");
+
+if (application.Environment.IsDevelopment())
+{
+    var auth = application.Services.GetRequiredService<TokenService>();
+    Console.WriteLine(auth.GenerateToken(1));
+}
+
 await application.RunAsync();
 
 WebApplication ConfigureApplication(WebApplication application)
@@ -35,10 +46,7 @@ WebApplication ConfigureApplication(WebApplication application)
     if (application.Environment.IsDevelopment())
     {
         application.UseSwagger();
-        application.UseSwaggerUI(s =>
-        {
-            s.EnablePersistAuthorization();
-        });
+        application.UseSwaggerUI();
     }
 
     application.MapControllers();
@@ -80,8 +88,40 @@ void ConfigureServices(ServiceRegistry services)
             };
         });
 
+    if (isDevelopment)
+    {
+        services.AddSwaggerGen(swagger =>
+        {
+            var definition = new OpenApiSecurityScheme()
+            {
+                Name = "Bearer",
+                BearerFormat = "JWT",
+                Scheme = "bearer",
+                Description = "Auth token",
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.Http,
+            };
+
+            var scheme = new OpenApiSecurityScheme()
+            {
+                Reference = new OpenApiReference()
+                {
+                    Id = "jwt_auth",
+                    Type = ReferenceType.SecurityScheme,
+                },
+            };
+
+            var requirements = new OpenApiSecurityRequirement() { { scheme, [] } };
+
+            swagger.AddSecurityDefinition("jwt_auth", definition);
+            swagger.AddSecurityRequirement(requirements);
+        });
+    }
+
     services.AddAuthorization();
     services.AddControllers();
     services.AddEndpointsApiExplorer();
     services.AddSwaggerGen();
+    
+    services.ConfigureOptions<ConfigureTokenOptions>();
 }

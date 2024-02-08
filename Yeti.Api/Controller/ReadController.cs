@@ -11,6 +11,15 @@ public class ReadController(ManuscriptService manuscript, FragmentService fragme
     : ControllerBase
 {
     /// <summary>
+    /// Retrieves a fragment for rendering.
+    /// </summary>
+    [HttpGet("{id}")]
+    public async Task<ActionResult<FragmentDetail?>> GetFragmentDetail(long id)
+    {
+        return await fragment.GetFragmentDetail(id);
+    }
+
+    /// <summary>
     /// Retrieves a manuscript summary.
     /// </summary>
     [HttpGet("summary/{id}")]
@@ -26,11 +35,5 @@ public class ReadController(ManuscriptService manuscript, FragmentService fragme
     public async Task<ActionResult<List<FragmentSummary>>> GetFragments(long id)
     {
         return await manuscript.FragmentSummaries(id);
-    }
-
-    [HttpGet("read/{id}")]
-    public async Task<ActionResult<FragmentDetail?>> GetFragmentDetail(long id)
-    {
-        return await fragment.GetFragmentDetail(id);
     }
 }
