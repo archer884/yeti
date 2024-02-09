@@ -31,12 +31,14 @@ public class WriterContext(DbContextOptions<WriterContext> options)
         {
             e.HasMany(x => x.Fragments).WithOne(x => x.Manuscript);
             e.HasIndex(x => x.Title);
+            e.HasIndex(x => x.Created);
             e.HasIndex(x => x.SoftDelete);
         });
         
         builder.Entity<Fragment>(e =>
         {
             e.HasOne(x => x.Manuscript).WithMany(x => x.Fragments);
+            e.HasIndex(x => x.Created);
             e.HasIndex(x => x.SoftDelete);
         });
 
