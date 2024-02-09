@@ -13,12 +13,18 @@ public class ReadController(
     RecentService recentService)
     : ControllerBase
 {
+    /// <summary>
+    /// Gets the newest manuscripts.
+    /// </summary>
     [HttpGet("/new")]
     public async Task<ActionResult<List<ManuscriptSummary>>> GetNew()
     {
         return await recentService.ByNew(0);
     }
 
+    /// <summary>
+    /// Gets the most recently updated manuscripts.
+    /// </summary>
     [HttpGet("/updated")]
     public async Task<ActionResult<List<ManuscriptSummary>>> GetUpdated()
     {

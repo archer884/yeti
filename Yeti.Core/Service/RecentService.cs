@@ -13,6 +13,7 @@ public class RecentService(WriterContext context)
     {
         var manuscripts = await context.Manuscripts
             .OrderByDescending(x => x.Created)
+            .Where(x => x.Fragments.Where(f => !f.SoftDelete).Count() > 0)
             .Skip(page * PageSize)
             .Take(PageSize)
             .ToListAsync();
