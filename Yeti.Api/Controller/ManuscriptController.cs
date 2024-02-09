@@ -9,23 +9,23 @@ namespace Yeti.Api.Controller;
 [Authorize]
 [ApiController]
 [Route("[controller]")]
-public class ManuscriptController(ManuscriptService service) : ControllerBase
+public class ManuscriptController(ManuscriptService service) : YetiController
 {
     [HttpPost]
     public async Task<ActionResult<ManuscriptSummary?>> Post([FromBody] CreateManuscript create)
     {
-        return await service.CreateManuscript(create);
+        return await service.CreateManuscript(UserId, create);
     }
 
     [HttpPut]
     public async Task<ActionResult<ManuscriptSummary?>> Update([FromBody] UpdateManuscript update)
     {
-        return await service.UpdateManuscript(update);
+        return await service.UpdateManuscript(UserId, update);
     }
 
     [HttpDelete]
     public async Task<ActionResult<ManuscriptSummary?>> Delete([FromBody] DeleteManuscript delete)
     {
-        return await service.DeleteManuscript(delete);
+        return await service.DeleteManuscript(UserId, delete);
     }
 }

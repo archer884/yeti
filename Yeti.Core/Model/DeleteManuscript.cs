@@ -1,3 +1,3 @@
 namespace Yeti.Core.Model;
 
-public record DeleteManuscript(long WriterId, long ManuscriptId);
+public record DeleteManuscript(long ManuscriptId);

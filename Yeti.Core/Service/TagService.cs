@@ -8,12 +8,12 @@ namespace Yeti.Core.Service;
 
 public class TagService(WriterContext context)
 {
-    public async Task AddTag(ModifyTag modify)
+    public async Task AddTag(long writerId, ModifyTag modify)
     {
         var tag = await ByValue(modify.Normalized);
         var manuscript = await context.Manuscripts
             .Include(x => x.Tags)
-            .FirstOrDefaultAsync(x => x.Id == modify.ManuscriptId && x.WriterId == modify.WriterId);
+            .FirstOrDefaultAsync(x => x.Id == modify.ManuscriptId && x.WriterId == writerId);
 
         if (manuscript is null)
         {
@@ -25,11 +25,11 @@ public class TagService(WriterContext context)
         await context.SaveChangesAsync();
     }
 
-    public async Task RemoveTag(ModifyTag modify)
+    public async Task RemoveTag(long writerId, ModifyTag modify)
     {
         var manuscript = await context.Manuscripts
             .Include(x => x.Tags)
-            .FirstOrDefaultAsync(x => x.Id == modify.ManuscriptId && x.WriterId == modify.WriterId);
+            .FirstOrDefaultAsync(x => x.Id == modify.ManuscriptId && x.WriterId == writerId);
 
         if (manuscript is null)
         {

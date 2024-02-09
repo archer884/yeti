@@ -122,6 +122,7 @@ void ConfigureServices(ServiceRegistry services)
     services.AddAuthorization();
     services.AddControllers();
     services.AddEndpointsApiExplorer();
+    services.AddHttpContextAccessor();
     services.AddSwaggerGen();
     
     services.ConfigureOptions<ConfigureTokenOptions>();

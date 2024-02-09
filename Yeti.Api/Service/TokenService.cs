@@ -9,7 +9,7 @@ public class TokenService(IOptions<TokenOptions> options)
     {
         var token = new JwtSecurityToken(
             issuer: options.Value.Issuer,
-            claims: [new("userid", userId.ToString())],
+            claims: [new("id", userId.ToString())],
             signingCredentials: options.Value.Credentials);
         return new JwtSecurityTokenHandler().WriteToken(token);
     }

@@ -24,12 +24,11 @@ public class RecentService(WriterContext context)
     public async Task<List<ManuscriptSummary>> ByUpdated(int page)
     {
         var manuscripts = await context.Fragments
-            .Include(x => x.Manuscript)
-            .DistinctBy(x => x.ManuscriptId)
             .OrderByDescending(x => x.Created)
+            .Select(x => x.Manuscript)
+            .Distinct()
             .Skip(page * PageSize)
             .Take(PageSize)
-            .Select(x => x.Manuscript)
             .ToListAsync();
         
         return manuscripts.Select(x => new ManuscriptSummary(x)).ToList();

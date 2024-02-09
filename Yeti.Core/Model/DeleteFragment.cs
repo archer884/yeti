@@ -1,3 +1,3 @@
 namespace Yeti.Core.Model;
 
-public record DeleteFragment(long WriterId, long FragmentId);
+public record DeleteFragment(long FragmentId);

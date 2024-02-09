@@ -12,11 +12,11 @@ public class ManuscriptService(
     ManuscriptSummaryProvider manuscriptSummaryProvider,
     FragmentSummaryProvider fragmentSummaryProvider)
 {
-    public async Task<ManuscriptSummary?> CreateManuscript(CreateManuscript create)
+    public async Task<ManuscriptSummary?> CreateManuscript(long writerId, CreateManuscript create)
     {
         var manuscript = await context.Manuscripts.AddAsync(new Manuscript
         {
-            WriterId = create.WriterId,
+            WriterId = writerId,
             Title = create.Title,
             Blurb = create.Blurb,
         });
@@ -24,10 +24,10 @@ public class ManuscriptService(
         return new ManuscriptSummary(manuscript.Entity);
     }
 
-    public async Task<ManuscriptSummary?> UpdateManuscript(UpdateManuscript update)
+    public async Task<ManuscriptSummary?> UpdateManuscript(long writerId, UpdateManuscript update)
     {
         var manuscript = await context.Manuscripts
-            .FirstOrDefaultAsync(x => x.Id == update.ManuscriptId && x.WriterId == update.WriterId);
+            .FirstOrDefaultAsync(x => x.Id == update.ManuscriptId && x.WriterId == writerId);
 
         if (manuscript is null)
         {
@@ -41,10 +41,10 @@ public class ManuscriptService(
         return new ManuscriptSummary(manuscript);
     }
 
-    public async Task<ManuscriptSummary?> DeleteManuscript(DeleteManuscript delete)
+    public async Task<ManuscriptSummary?> DeleteManuscript(long writerId, DeleteManuscript delete)
     {
         var manuscript = await context.Manuscripts
-            .FirstOrDefaultAsync(x => x.Id == delete.ManuscriptId && x.WriterId == delete.WriterId);
+            .FirstOrDefaultAsync(x => x.Id == delete.ManuscriptId && x.WriterId == writerId);
 
         if (manuscript is null)
         {

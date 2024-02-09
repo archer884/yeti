@@ -9,17 +9,17 @@ namespace Yeti.Api.Controller;
 [Authorize]
 [ApiController]
 [Route("[controller]")]
-public class TagController(TagService service) : ControllerBase
+public class TagController(TagService service) : YetiController
 {
     [HttpPost("add")]
     public async Task AddTag([FromBody] ModifyTag modify)
     {
-        await service.AddTag(modify);
+        await service.AddTag(UserId, modify);
     }
 
     [HttpPost("remove")]
     public async Task RemoveTag([FromBody] ModifyTag modify)
     {
-        await service.RemoveTag(modify);
+        await service.RemoveTag(UserId, modify);
     }
 }

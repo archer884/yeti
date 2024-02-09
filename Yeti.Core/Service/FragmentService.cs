@@ -9,13 +9,13 @@ namespace Yeti.Core.Service;
 
 public class FragmentService(WriterContext context, FragmentSummaryProvider fragmentSummaryProvider)
 {
-    public async Task<FragmentSummary?> CreateFragment(CreateFragment create)
+    public async Task<FragmentSummary?> CreateFragment(long writerId, CreateFragment create)
     {
         var fragments = await fragmentSummaryProvider.ByManuscriptId(create.ManuscriptId);
         var nextSortBy = fragments.Select(x => x.SortBy).Max() + 1.0;
         var fragment = await context.Fragments.AddAsync(new Fragment
         {
-            WriterId = create.WriterId,
+            WriterId = writerId,
             ManuscriptId = create.ManuscriptId,
             Heading = create.Heading,
             Content = create.Content,
@@ -27,10 +27,10 @@ public class FragmentService(WriterContext context, FragmentSummaryProvider frag
     }
 
     // FIXME: Probably better to split fragment updates into different members for efficiency.
-    public async Task<FragmentSummary?> UpdateFragment(UpdateFragment update)
+    public async Task<FragmentSummary?> UpdateFragment(long writerId, UpdateFragment update)
     {
         var fragment = await context.Fragments
-            .FirstOrDefaultAsync(x => x.Id == update.FragmentId && x.WriterId == update.WriterId);
+            .FirstOrDefaultAsync(x => x.Id == update.FragmentId && x.WriterId == writerId);
 
         if (fragment is null)
         {
@@ -53,10 +53,10 @@ public class FragmentService(WriterContext context, FragmentSummaryProvider frag
         return new FragmentSummary(result.Entity);
     }
 
-    public async Task<FragmentSummary?> DeleteFragment(DeleteFragment delete)
+    public async Task<FragmentSummary?> DeleteFragment(long writerId, DeleteFragment delete)
     {
         var fragment = await context.Fragments
-            .FirstOrDefaultAsync(x => x.Id == delete.FragmentId && x.WriterId == delete.WriterId);
+            .FirstOrDefaultAsync(x => x.Id == delete.FragmentId && x.WriterId == writerId);
 
         if (fragment is null)
         {
