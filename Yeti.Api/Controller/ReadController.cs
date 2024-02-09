@@ -7,9 +7,24 @@ namespace Yeti.Api.Controller;
 
 [ApiController]
 [Route("[controller]")]
-public class ReadController(ManuscriptService manuscript, FragmentService fragment)
+public class ReadController(
+    ManuscriptService manuscript,
+    FragmentService fragment,
+    RecentService recentService)
     : ControllerBase
 {
+    [HttpGet("/new")]
+    public async Task<ActionResult<List<ManuscriptSummary>>> GetNew()
+    {
+        return await recentService.ByNew(0);
+    }
+
+    [HttpGet("/updated")]
+    public async Task<ActionResult<List<ManuscriptSummary>>> GetUpdated()
+    {
+        return await recentService.ByUpdated(0);
+    }
+
     /// <summary>
     /// Retrieves a fragment for rendering.
     /// </summary>
