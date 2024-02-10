@@ -30,8 +30,6 @@ builder.Configuration.AddConfiguration(configuration);
 builder.Host.UseLamar().ConfigureContainer<ServiceRegistry>(ConfigureServices);
 
 var application = ConfigureApplication(builder.Build());
-// This is a hack to ensure that my "database" includes seed data.
-await application.Services.GetRequiredService<WriterContext>().Database.EnsureCreatedAsync();
 application.Logger.LogInformation("startup complete");
 
 if (application.Environment.IsDevelopment())
@@ -65,7 +63,8 @@ void ConfigureServices(ServiceRegistry services)
         config.AddConfiguration(configuration);
     });
 
-    services.AddDbContextPool<WriterContext>(config => config.UseInMemoryDatabase("yeti"));
+    services.AddDbContextPool<WriterContext>(
+        config => config.UseNpgsql(configuration.GetConnectionString("WriterContext")));
 
     services
         .AddAuthentication(options =>
