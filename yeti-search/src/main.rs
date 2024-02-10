@@ -1,105 +1,82 @@
 mod logging;
+mod model;
 mod schema;
 
-use std::env;
+use std::{env, thread};
 
-use axum::{
-    extract::{Path, State},
-    http::StatusCode,
-    response::IntoResponse,
-    routing::get,
-    Json, Router,
-};
-use deadpool_diesel::{postgres::Pool, Manager};
+use diesel::prelude::*;
 use diesel::{
-    deserialize::Queryable,
-    query_dsl::methods::{FilterDsl, LimitDsl, SelectDsl},
-    result::Error::NotFound,
-    ExpressionMethods, RunQueryDsl, Selectable, SelectableHelper,
+    connection::LoadConnection, pg::Pg, r2d2, ExpressionMethods, PgConnection, SelectableHelper,
 };
-use schema::Fragments;
-use serde::Serialize;
-use tokio::net::TcpListener;
+use flume::Sender;
+use model::Fragment;
+use rayon::prelude::*;
+use rocket::{post, routes, State};
 
-#[derive(Serialize, Selectable, Queryable)]
-#[diesel(table_name = Fragments)]
-struct Fragment {
-    #[diesel(column_name = Heading)]
-    heading: Option<String>,
-    #[diesel(column_name = Content)]
-    content: String,
-}
+use crate::model::SearchOperation;
 
-#[tokio::main]
-async fn main() {
-    const ADDRESS: &str = "127.0.0.1:5001";
-
+#[rocket::main]
+async fn main() -> Result<(), rocket::Error> {
     dotenvy::dotenv().ok();
     logging::initialize();
 
-    let manager = Manager::new(
-        env::var("DATABASE_URL").unwrap(),
-        deadpool_diesel::Runtime::Tokio1,
-    );
+    let manager = r2d2::ConnectionManager::<PgConnection>::new(env::var("DATABASE_URL").unwrap());
+    let pool = r2d2::Pool::builder().build(manager).unwrap();
+    let (tx, rx) = flume::unbounded::<SearchOperation>();
 
-    let pool = Pool::builder(manager).build().unwrap();
-    let app = Router::new()
-        .route("/", get(root))
-        .route("/:id", get(get_fragment_text))
-        .fallback(bad_request)
-        .with_state(pool);
+    let _receiver = thread::spawn(move || {
+        rx.into_iter().par_bridge().for_each(|op| match op {
+            SearchOperation::Index(id) => {
+                let fragment = fetch(id, pool.get().unwrap());
+                if let Some(fragment) = fragment {
+                    tracing::debug!(text = fragment.content, "would index fragment:{id}");
+                }
+            }
+            SearchOperation::Remove(id) => {
+                tracing::debug!("would remove fragment:{id}");
+            }
+        });
+    });
 
-    let listener = TcpListener::bind(ADDRESS).await.unwrap();
+    let _rocket = rocket::build()
+        .manage(tx)
+        .mount("/", routes![add_remove])
+        .launch()
+        .await?;
 
-    tracing::info!("listening on http://{ADDRESS}");
-
-    axum::serve(listener, app).await.unwrap()
+    Ok(())
 }
 
-pub async fn root() -> &'static str {
-    "active"
-}
+#[post("/?<a>&<r>")]
+fn add_remove(a: Option<i64>, r: Option<i64>, sender: &State<Sender<SearchOperation>>) {
+    if let Some(id) = a {
+        sender.send(SearchOperation::Index(id)).unwrap();
+    }
 
-pub async fn bad_request() -> (StatusCode, &'static str) {
-    (StatusCode::BAD_REQUEST, "bad request")
-}
-
-// Proof of concept. Not actually useful. Actually, I'm pretty sure the application doesn't need
-// any handler to have access to the connection pool like this...
-async fn get_fragment_text(
-    State(pool): State<Pool>,
-    Path(id): Path<i64>,
-) -> Result<Json<Fragment>, (StatusCode, String)> {
-    use schema::Fragments::dsl;
-
-    tracing::debug!("request for fragment:{id}");
-
-    let time = chronograf::start();
-    let cx = pool.get().await.map_err(internal_error)?;
-    let fragments = cx
-        .interact(move |cx| {
-            schema::Fragments::table
-                .filter(dsl::Id.eq(id))
-                .limit(1)
-                .select(Fragment::as_select())
-                .load(cx)
-        })
-        .await
-        .map_err(internal_error)?
-        .map_err(internal_error)?;
-
-    let elapsed = time.finish();
-    tracing::debug!("{:?}", elapsed);
-
-    match fragments.into_iter().next() {
-        Some(fragment) => Ok(Json(fragment)),
-        None => Err((StatusCode::NOT_FOUND, String::from("not found"))),
+    if let Some(id) = r {
+        sender.send(SearchOperation::Remove(id)).unwrap();
     }
 }
 
-fn internal_error<E>(err: E) -> (StatusCode, String)
-where
-    E: std::error::Error,
-{
-    (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
+// No idea what error type this might have...
+fn fetch(id: i64, mut cx: impl LoadConnection<Backend = Pg>) -> Option<Fragment> {
+    use schema::Fragments::dsl;
+
+    let time = chronograf::start();
+
+    let fragments: Vec<Fragment> = schema::Fragments::table
+        .filter(dsl::Id.eq(id))
+        .limit(1)
+        .select(Fragment::as_select())
+        .load(&mut cx)
+        .unwrap();
+
+    let elapsed = time.finish();
+    tracing::debug!("fetch complete: {:?}", elapsed);
+
+    single(fragments)
+}
+
+fn single<I: IntoIterator>(i: I) -> Option<I::Item> {
+    i.into_iter().next()
 }
