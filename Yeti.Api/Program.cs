@@ -123,6 +123,6 @@ void ConfigureServices(ServiceRegistry services)
     services.AddEndpointsApiExplorer();
     services.AddHttpContextAccessor();
     services.AddSwaggerGen();
-    
+
     services.ConfigureOptions<ConfigureTokenOptions>();
 }

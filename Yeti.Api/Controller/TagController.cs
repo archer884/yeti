@@ -12,14 +12,8 @@ namespace Yeti.Api.Controller;
 public class TagController(TagService service) : YetiController
 {
     [HttpPost("add")]
-    public async Task AddTag([FromBody] ModifyTag modify)
-    {
-        await service.AddTag(UserId, modify);
-    }
+    public async Task AddTag([FromBody] ModifyTag modify) => await service.AddTag(UserId, modify);
 
     [HttpPost("remove")]
-    public async Task RemoveTag([FromBody] ModifyTag modify)
-    {
-        await service.RemoveTag(UserId, modify);
-    }
+    public async Task RemoveTag([FromBody] ModifyTag modify) => await service.RemoveTag(UserId, modify);
 }

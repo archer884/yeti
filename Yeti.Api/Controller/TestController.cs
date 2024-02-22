@@ -11,8 +11,5 @@ namespace Yeti.Api.Controller;
 public class TestController(WriterContext context)
 {
     [HttpGet]
-    public async Task<ActionResult<List<Tag>>> GetTags()
-    {
-        return await context.Tags.ToListAsync();
-    }
+    public async Task<ActionResult<List<Tag>>> GetTags() => await context.Tags.ToListAsync();
 }

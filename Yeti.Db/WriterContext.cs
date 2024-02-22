@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 using Yeti.Db.Model;
@@ -8,10 +8,10 @@ namespace Yeti.Db;
 public class WriterContext(DbContextOptions<WriterContext> options)
     : DbContext(options)
 {
-    public DbSet<Writer> Writers { get; set; }
-    public DbSet<Manuscript> Manuscripts { get; set; }
-    public DbSet<Fragment> Fragments { get; set; }
-    public DbSet<Tag> Tags { get; set; }
+    public DbSet<Writer> Writers { get; set; } = null!;
+    public DbSet<Manuscript> Manuscripts { get; set; } = null!;
+    public DbSet<Fragment> Fragments { get; set; } = null!;
+    public DbSet<Tag> Tags { get; set; } = null!;
 
     public override EntityEntry<TEntity> Update<TEntity>(TEntity entity)
     {
@@ -34,7 +34,7 @@ public class WriterContext(DbContextOptions<WriterContext> options)
             e.HasIndex(x => x.Created);
             e.HasIndex(x => x.SoftDelete);
         });
-        
+
         builder.Entity<Fragment>(e =>
         {
             e.HasOne(x => x.Manuscript).WithMany(x => x.Fragments);
@@ -45,7 +45,7 @@ public class WriterContext(DbContextOptions<WriterContext> options)
         builder.Entity<Tag>().HasIndex(x => x.Value).IsUnique();
 
         Seed(builder);
-        
+
         base.OnModelCreating(builder);
     }
 

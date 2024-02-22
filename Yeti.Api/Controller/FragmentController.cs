@@ -13,19 +13,13 @@ public class FragmentController(FragmentService service) : YetiController
 {
     [HttpPost]
     public async Task<ActionResult<FragmentSummary?>> Post([FromBody] CreateFragment create)
-    {
-        return await service.CreateFragment(UserId, create);
-    }
+        => await service.CreateFragment(UserId, create);
 
     [HttpPut]
     public async Task<ActionResult<FragmentSummary?>> Update([FromBody] UpdateFragment update)
-    {
-        return await service.UpdateFragment(UserId, update);
-    }
+        => await service.UpdateFragment(UserId, update);
 
     [HttpDelete]
     public async Task<ActionResult<FragmentSummary?>> Delete([FromBody] DeleteFragment delete)
-    {
-        return await service.DeleteFragment(UserId, delete);
-    }
+        => await service.DeleteFragment(UserId, delete);
 }

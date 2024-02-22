@@ -11,7 +11,5 @@ public class SearchController(TagSearchService tagSearch) : ControllerBase
 {
     [HttpGet("/tag/{value}/{page}")]
     public async Task<ActionResult<List<ManuscriptSummary>>> Get(string value, int page = 0)
-    {
-        return await tagSearch.ByTag(value, page);
-    }
+        => await tagSearch.ByTag(value, page);
 }

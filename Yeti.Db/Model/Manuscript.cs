@@ -10,6 +10,6 @@ public class Manuscript : Tracked
 
     public List<Fragment> Fragments { get; set; } = [];
     public List<Tag> Tags { get; set; } = [];
-    
+
     public Writer Writer { get; set; } = null!;
 }

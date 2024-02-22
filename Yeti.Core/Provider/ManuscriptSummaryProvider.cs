@@ -12,7 +12,7 @@ public class ManuscriptSummaryProvider(WriterContext context)
         {
             return null;
         }
-        
+
         return new ManuscriptSummary(manuscript);
     }
 }

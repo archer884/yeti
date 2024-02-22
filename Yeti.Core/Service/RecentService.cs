@@ -17,7 +17,7 @@ public class RecentService(WriterContext context)
             .Skip(page * PageSize)
             .Take(PageSize)
             .ToListAsync();
-        
+
         return manuscripts.Select(x => new ManuscriptSummary(x)).ToList();
     }
 
@@ -30,7 +30,7 @@ public class RecentService(WriterContext context)
             .Skip(page * PageSize)
             .Take(PageSize)
             .ToListAsync();
-        
+
         return manuscripts.Select(x => new ManuscriptSummary(x)).ToList();
     }
 }
