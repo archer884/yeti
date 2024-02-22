@@ -25,6 +25,14 @@ public partial class WriterContextFactory : IDesignTimeDbContextFactory<WriterCo
         // If not, this is going to be a really fast migration.
         var path = args.FirstOrDefault(x => File.Exists(x)) ?? ".env";
         var content = File.ReadAllText(path);
+
+        var m = ConnectionString().Match(content);
+
+        if (!m.Success)
+        {
+            return null;
+        }
+
         return ConnectionString().Match(content).Groups[1].Value;
     }
 
