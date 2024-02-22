@@ -1,6 +1,4 @@
 mod logging;
-mod model;
-mod schema;
 
 use std::{env, thread};
 
@@ -9,11 +7,9 @@ use diesel::{
     connection::LoadConnection, pg::Pg, r2d2, ExpressionMethods, PgConnection, SelectableHelper,
 };
 use flume::Sender;
-use model::Fragment;
 use rayon::prelude::*;
 use rocket::{post, routes, State};
-
-use crate::model::SearchOperation;
+use search::model::{Fragment, SearchOperation};
 
 #[rocket::main]
 async fn main() -> Result<(), rocket::Error> {
@@ -60,11 +56,11 @@ fn add_remove(a: Option<i64>, r: Option<i64>, sender: &State<Sender<SearchOperat
 
 // No idea what error type this might have...
 fn fetch(id: i64, mut cx: impl LoadConnection<Backend = Pg>) -> Option<Fragment> {
-    use schema::Fragments::dsl;
+    use search::schema::Fragments::dsl;
 
     let time = chronograf::start();
 
-    let fragments: Vec<Fragment> = schema::Fragments::table
+    let fragments: Vec<Fragment> = search::schema::Fragments::table
         .filter(dsl::Id.eq(id))
         .limit(1)
         .select(Fragment::as_select())
