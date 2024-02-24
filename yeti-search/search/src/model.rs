@@ -9,7 +9,7 @@ pub enum SearchOperation {
     Remove(i64),
 }
 
-#[derive(Serialize, Selectable, Queryable)]
+#[derive(Debug, Serialize, Selectable, Queryable)]
 #[diesel(table_name = Fragments)]
 pub struct Fragment {
     #[diesel(column_name = Id)]

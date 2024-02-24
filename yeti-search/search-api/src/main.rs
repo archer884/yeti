@@ -1,15 +1,12 @@
-mod logging;
-
 use std::{env, thread};
 
-use diesel::prelude::*;
-use diesel::{
-    connection::LoadConnection, pg::Pg, r2d2, ExpressionMethods, PgConnection, SelectableHelper,
-};
+use diesel::{r2d2, PgConnection};
 use flume::Sender;
 use rayon::prelude::*;
 use rocket::{post, routes, State};
-use search::model::{Fragment, SearchOperation};
+use search::{db, model::SearchOperation};
+
+mod logging;
 
 #[rocket::main]
 async fn main() -> Result<(), rocket::Error> {
@@ -23,7 +20,7 @@ async fn main() -> Result<(), rocket::Error> {
     let _receiver = thread::spawn(move || {
         rx.into_iter().par_bridge().for_each(|op| match op {
             SearchOperation::Index(id) => {
-                let fragment = fetch(id, pool.get().unwrap());
+                let fragment = db::by_id(id, pool.get().unwrap());
                 if let Some(fragment) = fragment {
                     tracing::debug!(text = fragment.content, "would index fragment:{id}");
                 }
@@ -52,27 +49,4 @@ fn add_remove(a: Option<i64>, r: Option<i64>, sender: &State<Sender<SearchOperat
     if let Some(id) = r {
         sender.send(SearchOperation::Remove(id)).unwrap();
     }
-}
-
-// No idea what error type this might have...
-fn fetch(id: i64, mut cx: impl LoadConnection<Backend = Pg>) -> Option<Fragment> {
-    use search::schema::Fragments::dsl;
-
-    let time = chronograf::start();
-
-    let fragments: Vec<Fragment> = search::schema::Fragments::table
-        .filter(dsl::Id.eq(id))
-        .limit(1)
-        .select(Fragment::as_select())
-        .load(&mut cx)
-        .unwrap();
-
-    let elapsed = time.finish();
-    tracing::debug!("fetch complete: {:?}", elapsed);
-
-    single(fragments)
-}
-
-fn single<I: IntoIterator>(i: I) -> Option<I::Item> {
-    i.into_iter().next()
 }
