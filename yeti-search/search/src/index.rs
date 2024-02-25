@@ -106,6 +106,7 @@ impl IndexBuilder {
         for fragment in page {
             writer.add_document(self.schema.document(fragment))?;
         }
+        writer.commit()?;
         Ok(())
     }
 
