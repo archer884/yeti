@@ -1,17 +1,73 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use diesel::{connection::LoadConnection, pg::Pg};
 use tantivy::{
+    collector::TopDocs,
     directory::MmapDirectory,
     doc,
+    query::QueryParser,
     schema::{self, Field, Schema},
-    Document, Index, IndexWriter,
+    Document, Index, IndexReader, IndexWriter,
 };
 
-use crate::{db, model::Fragment};
+use crate::{
+    db,
+    model::{Fragment, FragmentInfo},
+};
 
 const MEGABYTE: usize = 0x100000;
 const DEFAULT_ARENA_SIZE: usize = 2048;
+const SEARCH_PAGE_SIZE: usize = 10;
+
+pub struct FragmentIndex {
+    // FIXME: I expect to use this for writing, but we'll see.
+    index: Index,
+    reader: IndexReader,
+    schema: FragmentSchema,
+    parser: QueryParser,
+}
+
+impl FragmentIndex {
+    pub fn new(path: impl AsRef<Path>) -> crate::Result<Self> {
+        let dir = MmapDirectory::open(path)?;
+        let schema = FragmentSchema::create();
+        let index = Index::open_or_create(dir, schema.schema.clone())?;
+        let reader = index.reader()?;
+        let parser = QueryParser::for_index(&index, vec![schema.content]);
+
+        Ok(Self {
+            index,
+            reader,
+            schema,
+            parser,
+        })
+    }
+
+    pub fn search(&self, query: &str, page: usize) -> crate::Result<Vec<FragmentInfo>> {
+        let query = self.parser.parse_query(query)?;
+        let collector = TopDocs::with_limit(SEARCH_PAGE_SIZE).and_offset(page * SEARCH_PAGE_SIZE);
+        let searcher = self.reader.searcher();
+        let results = searcher.search(&query, &collector)?;
+
+        Ok(results
+            .into_iter()
+            .filter_map(|(_, addr)| searcher.doc(addr).ok())
+            .map(|doc| FragmentInfo {
+                id: doc.get_first(self.schema.id).unwrap().as_i64().unwrap(),
+                writer_id: doc
+                    .get_first(self.schema.writer_id)
+                    .unwrap()
+                    .as_i64()
+                    .unwrap(),
+                manuscript_id: doc
+                    .get_first(self.schema.manuscript_id)
+                    .unwrap()
+                    .as_i64()
+                    .unwrap(),
+            })
+            .collect())
+    }
+}
 
 pub struct IndexBuilder {
     /// sets the path where the index will be stored

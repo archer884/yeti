@@ -27,3 +27,11 @@ pub struct Fragment {
     #[diesel(column_name = Content)]
     pub content: String,
 }
+
+// FIXME: I dunno if this is needed, even... We may be able to directly serialize a document.
+#[derive(Debug, Serialize)]
+pub struct FragmentInfo {
+    pub id: i64,
+    pub writer_id: i64,
+    pub manuscript_id: i64,
+}

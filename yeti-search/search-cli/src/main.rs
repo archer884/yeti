@@ -3,7 +3,7 @@ use std::{env, fs, path::Path, process};
 use anyhow::Ok;
 use clap::Parser;
 use diesel::{Connection, PgConnection};
-use search::{db, index::IndexBuilder};
+use search::{db, index::{FragmentIndex, IndexBuilder}};
 
 mod logging;
 
@@ -19,7 +19,12 @@ struct Args {
 #[derive(Debug, Parser)]
 enum Command {
     Initialize,
-    Search,
+    Search(SearchQuery),
+}
+
+#[derive(Debug, Parser)]
+struct SearchQuery {
+    query: String,
 }
 
 fn main() {
@@ -38,13 +43,12 @@ fn run(args: Args) -> anyhow::Result<()> {
 
     match args.command {
         Command::Initialize => initialize(connection),
-        Command::Search => search(),
+        Command::Search(query) => search(query),
     }
 }
 
 fn initialize(connection: PgConnection) -> anyhow::Result<()> {
     let directory = env::var(INDEX_DIRECTORY)?;
-
     if !Path::new(&directory).exists() {
         fs::create_dir_all(&directory)?;
     }
@@ -54,6 +58,18 @@ fn initialize(connection: PgConnection) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn search() -> anyhow::Result<()> {
-    todo!("Guess we need some way to read the index, huh.")
+fn search(query: SearchQuery) -> anyhow::Result<()> {
+    let directory = env::var(INDEX_DIRECTORY)?;
+    if !Path::new(&directory).exists() {
+        fs::create_dir_all(&directory)?;
+    }
+
+    let index = FragmentIndex::new(&directory)?;
+    let results = index.search(&query.query, 0)?;
+
+    for result in results {
+        println!("{result:?}");
+    }
+
+    Ok(())
 }
