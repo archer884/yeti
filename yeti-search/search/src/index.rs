@@ -11,7 +11,7 @@ use tantivy::{
 use crate::{db, model::Fragment};
 
 const MEGABYTE: usize = 0x100000;
-const DEFAULT_ARENA_SIZE: usize = MEGABYTE * 2048;
+const DEFAULT_ARENA_SIZE: usize = 2048;
 
 pub struct IndexBuilder {
     /// sets the path where the index will be stored
