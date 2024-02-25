@@ -5,7 +5,7 @@ use tantivy::{
     directory::MmapDirectory,
     doc,
     schema::{self, Field, Schema},
-    Index, IndexWriter,
+    Document, Index, IndexWriter,
 };
 
 use crate::{db, model::Fragment};
@@ -47,14 +47,8 @@ impl IndexBuilder {
     }
 
     fn index_page(&self, writer: &mut IndexWriter, page: &[Fragment]) -> tantivy::Result<()> {
-        let schema = &self.schema;
         for fragment in page {
-            writer.add_document(doc!(
-                schema.id => fragment.id,
-                schema.writer_id => fragment.writer_id,
-                schema.manuscript_id => fragment.manuscript_id,
-                schema.content => fragment.content.as_str(),
-            ))?;
+            writer.add_document(self.schema.document(fragment))?;
         }
         Ok(())
     }
@@ -82,5 +76,14 @@ impl FragmentSchema {
             content: builder.add_text_field("content", schema::TEXT),
             schema: builder.build(),
         }
+    }
+
+    pub fn document(&self, fragment: &Fragment) -> Document {
+        doc!(
+            self.id => fragment.id,
+            self.writer_id => fragment.writer_id,
+            self.manuscript_id => fragment.manuscript_id,
+            self.content => fragment.content.as_str(),
+        )
     }
 }

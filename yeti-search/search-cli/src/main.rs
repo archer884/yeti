@@ -44,7 +44,7 @@ fn run(args: Args) -> anyhow::Result<()> {
 
 fn initialize(connection: PgConnection) -> anyhow::Result<()> {
     let directory = env::var(INDEX_DIRECTORY)?;
-    
+
     if !Path::new(&directory).exists() {
         fs::create_dir_all(&directory)?;
     }
