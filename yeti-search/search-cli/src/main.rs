@@ -3,7 +3,10 @@ use std::{env, fs, path::Path, process};
 use anyhow::Ok;
 use clap::Parser;
 use diesel::{Connection, PgConnection};
-use search::{db, index::{FragmentIndex, IndexBuilder}};
+use search::{
+    db,
+    index::{FragmentIndex, IndexBuilder},
+};
 
 mod logging;
 

@@ -3,17 +3,24 @@ use std::{env, thread};
 use diesel::{r2d2, PgConnection};
 use flume::Sender;
 use rayon::prelude::*;
-use rocket::{post, routes, State};
-use search::{db, model::SearchOperation};
+use rocket::{get, post, routes, serde::json::Json, State};
+use search::{
+    db,
+    index::FragmentIndex,
+    model::{FragmentInfo, SearchOperation},
+};
 
 mod logging;
+
+const DATABASE_URL: &str = "DATABASE_URL";
+const INDEX_DIRECTORY: &str = "INDEX_DIRECTORY";
 
 #[rocket::main]
 async fn main() -> Result<(), rocket::Error> {
     dotenvy::dotenv().ok();
     logging::initialize();
 
-    let manager = r2d2::ConnectionManager::<PgConnection>::new(env::var("DATABASE_URL").unwrap());
+    let manager = r2d2::ConnectionManager::<PgConnection>::new(env::var(DATABASE_URL).unwrap());
     let pool = r2d2::Pool::builder().build(manager).unwrap();
     let (tx, rx) = flume::unbounded::<SearchOperation>();
 
@@ -31,13 +38,21 @@ async fn main() -> Result<(), rocket::Error> {
         });
     });
 
+    let index = FragmentIndex::new(env::var(INDEX_DIRECTORY).unwrap()).unwrap();
     let _rocket = rocket::build()
         .manage(tx)
-        .mount("/", routes![add_remove])
+        .manage(index)
+        .mount("/", routes![add_remove, query])
         .launch()
         .await?;
 
     Ok(())
+}
+
+#[get("/?<q>&<p>")]
+fn query(q: String, p: Option<usize>, index: &State<FragmentIndex>) -> Json<Vec<FragmentInfo>> {
+    let results = index.search(&q, p.unwrap_or(0)).unwrap();
+    Json(results)
 }
 
 #[post("/?<a>&<r>")]
