@@ -2,7 +2,6 @@ use std::{env, thread};
 
 use diesel::{r2d2, PgConnection};
 use flume::Sender;
-use rayon::prelude::*;
 use rocket::{get, post, routes, serde::json::Json, State};
 use search::{
     db,
@@ -23,22 +22,30 @@ async fn main() -> Result<(), rocket::Error> {
     let manager = r2d2::ConnectionManager::<PgConnection>::new(env::var(DATABASE_URL).unwrap());
     let pool = r2d2::Pool::builder().build(manager).unwrap();
     let (tx, rx) = flume::unbounded::<SearchOperation>();
+    let index = FragmentIndex::new(env::var(INDEX_DIRECTORY).unwrap()).unwrap();
 
+    let mut writer = index.writer().unwrap();
+
+    // In theory, this results in single-threaded indexing, except that I believe the IndexWriter
+    // itself manages a queue and threadpool. Right now, we commit after every entry, because who
+    // cares, but we could in theory only commit after a given number of operations have been
+    // completed, or after a given amount of time has passed.
     let _receiver = thread::spawn(move || {
-        rx.into_iter().par_bridge().for_each(|op| match op {
-            SearchOperation::Index(id) => {
-                let fragment = db::by_id(id, pool.get().unwrap());
-                if let Some(fragment) = fragment {
-                    tracing::debug!(text = fragment.content, "would index fragment:{id}");
+        for op in rx {
+            match op {
+                SearchOperation::Index(id) => {
+                    let fragment = db::by_id(id, pool.get().unwrap());
+                    if let Some(fragment) = fragment {
+                        writer.update(&fragment).unwrap();
+                    }
+                }
+                SearchOperation::Remove(id) => {
+                    writer.remove(id).unwrap();
                 }
             }
-            SearchOperation::Remove(id) => {
-                tracing::debug!("would remove fragment:{id}");
-            }
-        });
+        }
     });
 
-    let index = FragmentIndex::new(env::var(INDEX_DIRECTORY).unwrap()).unwrap();
     let _rocket = rocket::build()
         .manage(tx)
         .manage(index)

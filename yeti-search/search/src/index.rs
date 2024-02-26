@@ -7,7 +7,7 @@ use tantivy::{
     doc,
     query::QueryParser,
     schema::{self, Field, Schema},
-    Document, Index, IndexReader, IndexWriter,
+    Document, Index, IndexReader, IndexWriter, Term,
 };
 
 use crate::{
@@ -67,8 +67,38 @@ impl FragmentIndex {
             })
             .collect())
     }
+
+    pub fn writer(&self) -> crate::Result<FragmentWriter> {
+        let writer = self.index.writer(DEFAULT_ARENA_SIZE * MEGABYTE)?;
+        Ok(FragmentWriter {
+            writer,
+            schema: self.schema.clone(),
+        })
+    }
 }
 
+pub struct FragmentWriter {
+    writer: IndexWriter,
+    schema: FragmentSchema,
+}
+
+impl FragmentWriter {
+    // FIXME: I bet this isn't exactly efficient.
+    pub fn update(&mut self, fragment: &Fragment) -> crate::Result<()> {
+        self.writer.add_document(self.schema.document(fragment))?;
+        self.writer.commit()?;
+        Ok(())
+    }
+
+    pub fn remove(&mut self, id: i64) -> crate::Result<()> {
+        let term = Term::from_field_i64(self.schema.id, id);
+        self.writer.delete_term(term);
+        self.writer.commit()?;
+        Ok(())
+    }
+}
+
+/// An index builder used by the CLI to construct the index from scratch.
 pub struct IndexBuilder {
     /// sets the path where the index will be stored
     path: PathBuf,
@@ -115,6 +145,7 @@ impl IndexBuilder {
     }
 }
 
+#[derive(Clone)]
 pub struct FragmentSchema {
     id: Field,
     writer_id: Field,
@@ -127,7 +158,8 @@ impl FragmentSchema {
     pub fn create() -> Self {
         let mut builder = Schema::builder();
         Self {
-            id: builder.add_i64_field("id", schema::STORED),
+            // FIXME: Not sure what "fast" does. I'm hoping it lets us look this up by the id, but...
+            id: builder.add_i64_field("id", schema::STORED | schema::FAST),
             writer_id: builder.add_i64_field("writer_id", schema::STORED),
             manuscript_id: builder.add_i64_field("manuscript_id", schema::STORED),
             content: builder.add_text_field("content", schema::TEXT),
