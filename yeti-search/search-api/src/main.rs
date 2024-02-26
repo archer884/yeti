@@ -34,12 +34,14 @@ async fn main() -> Result<(), rocket::Error> {
         for op in rx {
             match op {
                 SearchOperation::Index(id) => {
+                    tracing::debug!("update fragment id:{id}");
                     let fragment = db::by_id(id, pool.get().unwrap());
                     if let Some(fragment) = fragment {
                         writer.update(&fragment).unwrap();
                     }
                 }
                 SearchOperation::Remove(id) => {
+                    tracing::debug!("remove fragment id:{id}");
                     writer.remove(id).unwrap();
                 }
             }

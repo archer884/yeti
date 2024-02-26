@@ -120,7 +120,6 @@ impl IndexBuilder {
     where
         T: LoadConnection<Backend = Pg>,
     {
-        // FIXME: In the event the index exists, do we want to delete it first?
         let index = Index::open_or_create(MmapDirectory::open(&self.path)?, self.schema())?;
         let mut writer = index.writer(self.memory)?;
 
@@ -133,6 +132,7 @@ impl IndexBuilder {
     }
 
     fn index_page(&self, writer: &mut IndexWriter, page: &[Fragment]) -> tantivy::Result<()> {
+        writer.delete_all_documents()?;
         for fragment in page {
             writer.add_document(self.schema.document(fragment))?;
         }
@@ -158,8 +158,8 @@ impl FragmentSchema {
     pub fn create() -> Self {
         let mut builder = Schema::builder();
         Self {
-            // FIXME: Not sure what "fast" does. I'm hoping it lets us look this up by the id, but...
-            id: builder.add_i64_field("id", schema::STORED | schema::FAST),
+            // id field must be indexed in order for us to delete the document on the basis of the id term
+            id: builder.add_i64_field("id", schema::INDEXED | schema::STORED),
             writer_id: builder.add_i64_field("writer_id", schema::STORED),
             manuscript_id: builder.add_i64_field("manuscript_id", schema::STORED),
             content: builder.add_text_field("content", schema::TEXT),
