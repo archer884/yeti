@@ -1,11 +1,14 @@
 use std::{env, thread};
 
-use diesel::{r2d2, PgConnection};
+use diesel::{
+    r2d2::{self, ConnectionManager, Pool},
+    PgConnection,
+};
 use flume::Sender;
 use rocket::{get, post, routes, serde::json::Json, State};
 use search::{
     db,
-    index::FragmentIndex,
+    index::{FragmentIndex, FragmentWriter},
     model::{FragmentInfo, SearchOperation},
 };
 
@@ -29,20 +32,20 @@ async fn main() -> Result<(), rocket::Error> {
     // In theory, this results in single-threaded indexing, except that I believe the IndexWriter
     // itself manages a queue and threadpool. Right now, we commit after every entry, because who
     // cares, but we could in theory only commit after a given number of operations have been
-    // completed, or after a given amount of time has passed.
+    // completed, or after a given amount of time has passed. In any case, the actual load on this
+    // application is expected to light, so it hardly matters.
     let _receiver = thread::spawn(move || {
         for op in rx {
             match op {
                 SearchOperation::Index(id) => {
-                    tracing::debug!("update fragment id:{id}");
-                    let fragment = db::by_id(id, pool.get().unwrap());
-                    if let Some(fragment) = fragment {
-                        writer.update(&fragment).unwrap();
+                    if let Err(e) = update_fragment(id, &mut writer, &pool) {
+                        tracing::error!(error = ?e, "failed to update fragment id:{id}");
                     }
                 }
                 SearchOperation::Remove(id) => {
-                    tracing::debug!("remove fragment id:{id}");
-                    writer.remove(id).unwrap();
+                    if let Err(e) = remove_fragment(id, &mut writer) {
+                        tracing::error!(error = ?e, "failed to remove fragment id:{id}");
+                    }
                 }
             }
         }
@@ -73,4 +76,23 @@ fn add_remove(a: Option<i64>, r: Option<i64>, sender: &State<Sender<SearchOperat
     if let Some(id) = r {
         sender.send(SearchOperation::Remove(id)).unwrap();
     }
+}
+
+fn update_fragment(
+    id: i64,
+    writer: &mut FragmentWriter,
+    pool: &Pool<ConnectionManager<PgConnection>>,
+) -> anyhow::Result<()> {
+    tracing::debug!("update fragment id:{id}");
+    let cx = pool.get()?;
+    if let Some(fragment) = db::by_id(id, cx) {
+        writer.update(&fragment)?;
+    }
+    Ok(())
+}
+
+fn remove_fragment(id: i64, writer: &mut FragmentWriter) -> anyhow::Result<()> {
+    tracing::debug!("remove fragment id:{id}");
+    writer.remove(id)?;
+    Ok(())
 }
