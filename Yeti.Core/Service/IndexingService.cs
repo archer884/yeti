@@ -8,7 +8,7 @@ public class IndexingService(ILogger<IndexingService> logger, IndexClient client
 {
     public void Add(Fragment fragment)
     {
-        var _ = Task.Run(async () => 
+        var _ = Task.Run(async () =>
         {
             try
             {
@@ -23,7 +23,7 @@ public class IndexingService(ILogger<IndexingService> logger, IndexClient client
 
     public void Update(Fragment add, Fragment remove)
     {
-        var _ = Task.Run(async () => 
+        var _ = Task.Run(async () =>
         {
             try
             {

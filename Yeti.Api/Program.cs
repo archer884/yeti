@@ -66,7 +66,7 @@ void ConfigureServices(ServiceRegistry services)
 
     if (isDevelopment)
     {
-        services.ConfigureSwagger(configuration);
+        services.ConfigureSwagger();
     }
 
     services.AddAuthorization();

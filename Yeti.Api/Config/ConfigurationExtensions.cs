@@ -22,7 +22,7 @@ public static class ConfigurationExtensions
             .AddJwtBearer(options =>
             {
                 var key = configuration["Jwt:Key"] ?? throw new ConfigurationException("Jwt:Key");
-                
+
                 options.TokenValidationParameters = new()
                 {
                     ValidateAudience = false,
@@ -36,7 +36,7 @@ public static class ConfigurationExtensions
             });
     }
 
-    public static void ConfigureSwagger(this ServiceRegistry services, IConfiguration configuration)
+    public static void ConfigureSwagger(this ServiceRegistry services)
     {
         services.AddSwaggerGen(swagger =>
         {
