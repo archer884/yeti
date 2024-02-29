@@ -58,18 +58,10 @@ impl FragmentIndex {
         let results = results
             .into_iter()
             .filter_map(|(_, addr)| searcher.doc(addr).ok())
-            .map(|doc| FragmentInfo {
-                id: doc.get_first(self.schema.id).unwrap().as_i64().unwrap(),
-                writer_id: doc
-                    .get_first(self.schema.writer_id)
-                    .unwrap()
-                    .as_i64()
-                    .unwrap(),
-                manuscript_id: doc
-                    .get_first(self.schema.manuscript_id)
-                    .unwrap()
-                    .as_i64()
-                    .unwrap(),
+            .map(|document| FragmentInfo {
+                id: self.schema.id.get_i64(&document),
+                writer_id: self.schema.writer_id.get_i64(&document),
+                manuscript_id: self.schema.manuscript_id.get_i64(&document),
             })
             .collect();
 
@@ -198,5 +190,22 @@ impl FragmentSchema {
             self.manuscript_id => fragment.manuscript_id,
             self.content => fragment.content.as_str(),
         )
+    }
+}
+
+trait FieldAccess {
+    fn get_i64(self, document: &Document) -> i64;
+}
+
+impl FieldAccess for Field {
+    fn get_i64(self, document: &Document) -> i64 {
+        unsafe {
+            document
+                .field_values()
+                .get_unchecked(0)
+                .value()
+                .as_i64()
+                .unwrap()
+        }
     }
 }
