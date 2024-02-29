@@ -14,4 +14,4 @@ A front end based on react remix. So far, this lists all the stories found in ap
 
 ### yeti-search
 
-Eventually intended to provide full-text indexing for manuscripts stored on yeti. Right now, its functionality is limited to printing the data found in certain fragments.
+Provides full-text indexing for manuscripts stored on yet.
