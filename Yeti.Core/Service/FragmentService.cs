@@ -7,7 +7,10 @@ using Yeti.Db.Model;
 
 namespace Yeti.Core.Service;
 
-public class FragmentService(WriterContext context, FragmentSummaryProvider fragmentSummaryProvider)
+public class FragmentService(
+    WriterContext context,
+    FragmentSummaryProvider fragmentSummaryProvider,
+    IIndexingService indexingService)
 {
     public async Task<FragmentSummary?> CreateFragment(long writerId, CreateFragment create)
     {
@@ -23,6 +26,7 @@ public class FragmentService(WriterContext context, FragmentSummaryProvider frag
         });
 
         await context.SaveChangesAsync();
+        indexingService.Add(fragment.Entity);
         return new FragmentSummary(fragment.Entity);
     }
 
@@ -50,6 +54,7 @@ public class FragmentService(WriterContext context, FragmentSummaryProvider frag
         context.Update(fragment);
         var result = await context.AddAsync(updated);
         await context.SaveChangesAsync();
+        indexingService.Update(result.Entity, fragment);
         return new FragmentSummary(result.Entity);
     }
 
@@ -66,6 +71,7 @@ public class FragmentService(WriterContext context, FragmentSummaryProvider frag
         fragment.SoftDelete = true;
         context.Update(fragment);
         await context.SaveChangesAsync();
+        indexingService.Delete(fragment);
         return new FragmentSummary(fragment);
     }
 

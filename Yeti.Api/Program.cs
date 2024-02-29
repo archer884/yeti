@@ -1,12 +1,11 @@
-﻿using System.Text;
-using Lamar;
+﻿using Lamar;
 using Lamar.Microsoft.DependencyInjection;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
 
 using Yeti.Api.Config;
+using Yeti.Core;
+using Yeti.Core.Config;
+using Yeti.Core.Service;
 using Yeti.Db;
 
 var isDevelopment = false;
@@ -63,59 +62,11 @@ void ConfigureServices(ServiceRegistry services)
         config.AddConfiguration(configuration);
     });
 
-    services.AddDbContextPool<WriterContext>(
-        config => config.UseNpgsql(configuration.GetConnectionString("WriterContext")));
-
-    services
-        .AddAuthentication(options =>
-        {
-            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-        })
-        .AddJwtBearer(options =>
-        {
-            var key = configuration["Jwt:Key"] ?? throw new Exception("missing jwt signing key");
-            options.TokenValidationParameters = new()
-            {
-                ValidateAudience = false,
-                // ValidAudience = configuration["Jwt:Audience"],
-                ValidateIssuer = true,
-                ValidIssuer = configuration["Jwt:Issuer"],
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
-                ValidateLifetime = false,
-            };
-        });
+    services.ConfigureAuth(configuration);
 
     if (isDevelopment)
     {
-        services.AddSwaggerGen(swagger =>
-        {
-            var definition = new OpenApiSecurityScheme()
-            {
-                Name = "Bearer",
-                BearerFormat = "JWT",
-                Scheme = "bearer",
-                Description = "Auth token",
-                In = ParameterLocation.Header,
-                Type = SecuritySchemeType.Http,
-            };
-
-            var scheme = new OpenApiSecurityScheme()
-            {
-                Reference = new OpenApiReference()
-                {
-                    Id = "jwt_auth",
-                    Type = ReferenceType.SecurityScheme,
-                },
-            };
-
-            var requirements = new OpenApiSecurityRequirement() { { scheme, [] } };
-
-            swagger.AddSecurityDefinition("jwt_auth", definition);
-            swagger.AddSecurityRequirement(requirements);
-        });
+        services.ConfigureSwagger(configuration);
     }
 
     services.AddAuthorization();
@@ -124,5 +75,18 @@ void ConfigureServices(ServiceRegistry services)
     services.AddHttpContextAccessor();
     services.AddSwaggerGen();
 
+    services.AddDbContextPool<WriterContext>(
+        config => config.UseNpgsql(configuration.GetConnectionString("WriterContext")));
+
+    services.ConfigureOptions<ConfigureIndexOptions>();
     services.ConfigureOptions<ConfigureTokenOptions>();
+
+    services.AddHttpClient<IndexClient>(x =>
+    {
+        x.DefaultRequestHeaders.Add("Accept", "application/json");
+        x.BaseAddress = new(configuration["Search:Url"] ?? throw new ConfigurationException("Search:Url"));
+    });
+
+    // I'm pretty sure using this as a singleton is fine, but I don't really KNOW, I guess...
+    services.AddSingleton<IIndexingService, IndexingService>();
 }
