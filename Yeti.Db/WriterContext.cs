@@ -17,7 +17,7 @@ public class WriterContext(DbContextOptions<WriterContext> options)
     {
         if (entity is Tracked tracked)
         {
-            tracked.Updated = DateTimeOffset.Now;
+            tracked.Updated = DateTimeOffset.UtcNow;
         }
 
         return base.Update(entity);
