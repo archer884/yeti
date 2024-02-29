@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+    fs, io,
+    path::{Path, PathBuf},
+};
 
 use diesel::{connection::LoadConnection, pg::Pg};
 use tantivy::{
@@ -6,7 +9,7 @@ use tantivy::{
     directory::MmapDirectory,
     doc,
     query::QueryParser,
-    schema::{self, Field, Schema},
+    schema::{self, Field, Schema, TextFieldIndexing, TextOptions},
     Document, Index, IndexReader, IndexWriter, Term,
 };
 
@@ -29,6 +32,7 @@ pub struct FragmentIndex {
 
 impl FragmentIndex {
     pub fn new(path: impl AsRef<Path>) -> crate::Result<Self> {
+        let path = ensure_path(path.as_ref())?;
         let dir = MmapDirectory::open(path)?;
         let schema = FragmentSchema::create();
         let index = Index::open_or_create(dir, schema.schema.clone())?;
@@ -44,12 +48,14 @@ impl FragmentIndex {
     }
 
     pub fn search(&self, query: &str, page: usize) -> crate::Result<Vec<FragmentInfo>> {
+        let time = chronograf::start();
+
         let query = self.parser.parse_query(query)?;
         let collector = TopDocs::with_limit(SEARCH_PAGE_SIZE).and_offset(page * SEARCH_PAGE_SIZE);
         let searcher = self.reader.searcher();
         let results = searcher.search(&query, &collector)?;
 
-        Ok(results
+        let results = results
             .into_iter()
             .filter_map(|(_, addr)| searcher.doc(addr).ok())
             .map(|doc| FragmentInfo {
@@ -65,7 +71,11 @@ impl FragmentIndex {
                     .as_i64()
                     .unwrap(),
             })
-            .collect())
+            .collect();
+
+        tracing::info!(elapsed = ?time.finish(), "query complete");
+
+        Ok(results)
     }
 
     pub fn writer(&self) -> crate::Result<FragmentWriter> {
@@ -96,6 +106,14 @@ impl FragmentWriter {
         self.writer.commit()?;
         Ok(())
     }
+}
+
+fn ensure_path(path: &Path) -> io::Result<&Path> {
+    if !path.exists() {
+        fs::create_dir_all(path)?;
+    }
+
+    Ok(path)
 }
 
 /// An index builder used by the CLI to construct the index from scratch.
@@ -157,12 +175,18 @@ pub struct FragmentSchema {
 impl FragmentSchema {
     pub fn create() -> Self {
         let mut builder = Schema::builder();
+        let content_options = TextOptions::default().set_indexing_options(
+            TextFieldIndexing::default()
+                .set_tokenizer("en_stem")
+                .set_index_option(schema::IndexRecordOption::WithFreqsAndPositions),
+        );
+
         Self {
             // id field must be indexed in order for us to delete the document on the basis of the id term
             id: builder.add_i64_field("id", schema::INDEXED | schema::STORED),
             writer_id: builder.add_i64_field("writer_id", schema::STORED),
             manuscript_id: builder.add_i64_field("manuscript_id", schema::STORED),
-            content: builder.add_text_field("content", schema::TEXT),
+            content: builder.add_text_field("content", content_options),
             schema: builder.build(),
         }
     }

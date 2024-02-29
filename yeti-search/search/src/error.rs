@@ -1,7 +1,12 @@
+use std::io;
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]
     Db(#[from] diesel::result::Error),
+
+    #[error(transparent)]
+    IO(#[from] io::Error),
 
     #[error(transparent)]
     Tantivy(#[from] tantivy::TantivyError),

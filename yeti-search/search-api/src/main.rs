@@ -69,12 +69,12 @@ fn query(q: String, p: Option<usize>, index: &State<FragmentIndex>) -> Json<Vec<
 
 #[post("/?<a>&<r>")]
 fn add_remove(a: Option<i64>, r: Option<i64>, sender: &State<Sender<SearchOperation>>) {
-    if let Some(id) = a {
-        sender.send(SearchOperation::Index(id)).unwrap();
-    }
-
     if let Some(id) = r {
         sender.send(SearchOperation::Remove(id)).unwrap();
+    }
+
+    if let Some(id) = a {
+        sender.send(SearchOperation::Index(id)).unwrap();
     }
 }
 
