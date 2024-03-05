@@ -23,4 +23,15 @@ public class TagSearchService(WriterContext context)
 
         return tag.Manuscripts.Select(x => new ManuscriptSummary(x)).ToList();
     }
+
+    public async Task<List<ManuscriptSummary>> ByTags(List<string> values, int page)
+    {
+        var normalized = values.Select(x => x.ToLowerInvariant()).ToList();
+        var manuscripts = await context.Manuscripts
+            .Where(x => normalized.All(y => x.Tags.Select(z => z.Value).Contains(y)))
+            .OrderBy(x => x.Title).Skip(page * PageSize).Take(PageSize)
+            .ToListAsync();
+
+        return manuscripts.Select(x => new ManuscriptSummary(x)).ToList();
+    }
 }
