@@ -13,7 +13,7 @@ public class TagSearchService(WriterContext context)
     {
         var normalized = value.ToLowerInvariant();
         var tag = await context.Tags
-            .Include(x => x.Manuscripts.OrderBy(x => x.Title).Skip(page * PageSize).Take(PageSize))
+            .Include(x => x.Manuscripts.OrderByDescending(x => x.Updated).Skip(page * PageSize).Take(PageSize))
             .FirstOrDefaultAsync(x => x.Value == normalized);
 
         if (tag is null)
@@ -29,7 +29,7 @@ public class TagSearchService(WriterContext context)
         var normalized = values.Select(x => x.ToLowerInvariant()).ToList();
         var manuscripts = await context.Manuscripts
             .Where(x => normalized.All(y => x.Tags.Select(z => z.Value).Contains(y)))
-            .OrderBy(x => x.Title).Skip(page * PageSize).Take(PageSize)
+            .OrderByDescending(x => x.Updated).Skip(page * PageSize).Take(PageSize)
             .ToListAsync();
 
         return manuscripts.Select(x => new ManuscriptSummary(x)).ToList();
