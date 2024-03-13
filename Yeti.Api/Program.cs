@@ -3,6 +3,7 @@ using Lamar.Microsoft.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 
 using Yeti.Api.Config;
+using Yeti.Api.Service;
 using Yeti.Core;
 using Yeti.Core.Config;
 using Yeti.Core.Service;

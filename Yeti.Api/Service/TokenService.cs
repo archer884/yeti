@@ -1,7 +1,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.Extensions.Options;
 
-namespace Yeti.Api.Config;
+using Yeti.Api.Config;
+
+namespace Yeti.Api.Service;
 
 public class TokenService(IOptions<TokenOptions> options)
 {

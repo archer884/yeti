@@ -25,7 +25,11 @@ public class WriterContext(DbContextOptions<WriterContext> options)
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
-        builder.Entity<Writer>().HasMany(x => x.Manuscripts).WithOne(x => x.Writer);
+        builder.Entity<Writer>(e =>
+        {
+            e.HasOne(x => x.Login);
+            e.HasMany(x => x.Manuscripts).WithOne(x => x.Writer);
+        });
 
         builder.Entity<Manuscript>(e =>
         {
@@ -56,6 +60,11 @@ public class WriterContext(DbContextOptions<WriterContext> options)
             Id = 1,
             Username = "longfellow",
             AuthorName = "H. Wadsworth Longfellow",
+        });
+
+        builder.Entity<Login>().HasData(new Login
+        {
+            Serialized = "$argon2id$v=19$m=19456,t=2,p=1$qbl/yTz6vxqviqM2SB9/wQ$qxbxQscW0sy907L8PYeNsTNTxyMZQuLm2r2ZONNFXWk",
         });
 
         builder.Entity<Manuscript>().HasData(new Manuscript

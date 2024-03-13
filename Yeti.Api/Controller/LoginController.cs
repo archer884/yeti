@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-using Yeti.Api.Config;
+using Yeti.Api.Service;
 using Yeti.Core.Model;
 
 namespace Yeti.Api.Controller;
