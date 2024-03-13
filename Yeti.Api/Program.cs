@@ -38,9 +38,6 @@ if (application.Environment.IsDevelopment())
     Console.WriteLine(auth.GenerateToken(1));
 }
 
-var foo = application.Services.GetService<WriterContext>();
-
-
 await application.RunAsync();
 
 WebApplication ConfigureApplication(WebApplication application)
@@ -82,8 +79,9 @@ void ConfigureServices(ServiceRegistry services)
     services.AddDbContextPool<WriterContext>(
         config => config.UseNpgsql(configuration.GetConnectionString("WriterContext")));
 
-    services.ConfigureOptions<ConfigureIndexOptions>();
-    services.ConfigureOptions<ConfigureTokenOptions>();
+    services.ConfigureOptions<Configure<HashProviderOptions>>();
+    services.ConfigureOptions<Configure<IndexOptions>>();
+    services.ConfigureOptions<Configure<TokenOptions>>();
 
     services.AddHttpClient<IndexClient>(x =>
     {
