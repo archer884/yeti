@@ -58,12 +58,14 @@ public class WriterContext(DbContextOptions<WriterContext> options)
         builder.Entity<Writer>().HasData(new Writer
         {
             Id = 1,
+            LoginId = 1,
             Username = "longfellow",
             AuthorName = "H. Wadsworth Longfellow",
         });
 
         builder.Entity<Login>().HasData(new Login
         {
+            Id = 1,
             Serialized = "$argon2id$v=19$m=19456,t=2,p=1$qbl/yTz6vxqviqM2SB9/wQ$qxbxQscW0sy907L8PYeNsTNTxyMZQuLm2r2ZONNFXWk",
         });
 

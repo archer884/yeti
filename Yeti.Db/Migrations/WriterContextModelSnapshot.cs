@@ -17,7 +17,7 @@ namespace Yeti.Db.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.1")
+                .HasAnnotation("ProductVersion", "8.0.2")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -87,23 +87,47 @@ namespace Yeti.Db.Migrations
                         {
                             Id = 1L,
                             Content = "By the shore of Gitche Gumbee,\nBy the shining Big-Sea-Water,\nAt the doorway of his wigwam,\nIn the pleasant Summer morning,\nHiawatha stood and waited.",
-                            Created = new DateTimeOffset(new DateTime(2024, 2, 10, 2, 4, 37, 479, DateTimeKind.Unspecified).AddTicks(2510), new TimeSpan(0, 0, 0, 0, 0)),
+                            Created = new DateTimeOffset(new DateTime(2024, 3, 13, 2, 22, 5, 4, DateTimeKind.Unspecified).AddTicks(6770), new TimeSpan(0, 0, 0, 0, 0)),
                             ManuscriptId = 1L,
                             SoftDelete = true,
                             SortBy = 1.0,
-                            Updated = new DateTimeOffset(new DateTime(2024, 2, 10, 2, 4, 37, 479, DateTimeKind.Unspecified).AddTicks(2520), new TimeSpan(0, 0, 0, 0, 0)),
+                            Updated = new DateTimeOffset(new DateTime(2024, 3, 13, 2, 22, 5, 4, DateTimeKind.Unspecified).AddTicks(6770), new TimeSpan(0, 0, 0, 0, 0)),
                             WriterId = 1L
                         },
                         new
                         {
                             Id = 2L,
                             Content = "By the shore of Gitche Gumee,\nBy the shining Big-Sea-Water,\nAt the doorway of his wigwam,\nIn the pleasant Summer morning,\nHiawatha stood and waited.",
-                            Created = new DateTimeOffset(new DateTime(2024, 2, 10, 2, 4, 37, 479, DateTimeKind.Unspecified).AddTicks(2520), new TimeSpan(0, 0, 0, 0, 0)),
+                            Created = new DateTimeOffset(new DateTime(2024, 3, 13, 2, 22, 5, 4, DateTimeKind.Unspecified).AddTicks(6770), new TimeSpan(0, 0, 0, 0, 0)),
                             ManuscriptId = 1L,
                             SoftDelete = false,
                             SortBy = 1.0,
-                            Updated = new DateTimeOffset(new DateTime(2024, 2, 10, 2, 4, 37, 479, DateTimeKind.Unspecified).AddTicks(2520), new TimeSpan(0, 0, 0, 0, 0)),
+                            Updated = new DateTimeOffset(new DateTime(2024, 3, 13, 2, 22, 5, 4, DateTimeKind.Unspecified).AddTicks(6770), new TimeSpan(0, 0, 0, 0, 0)),
                             WriterId = 1L
+                        });
+                });
+
+            modelBuilder.Entity("Yeti.Db.Model.Login", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Serialized")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Login");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1L,
+                            Serialized = "$argon2id$v=19$m=19456,t=2,p=1$qbl/yTz6vxqviqM2SB9/wQ$qxbxQscW0sy907L8PYeNsTNTxyMZQuLm2r2ZONNFXWk"
                         });
                 });
 
@@ -151,10 +175,10 @@ namespace Yeti.Db.Migrations
                         {
                             Id = 1L,
                             Blurb = "An old poem",
-                            Created = new DateTimeOffset(new DateTime(2024, 2, 10, 2, 4, 37, 479, DateTimeKind.Unspecified).AddTicks(2510), new TimeSpan(0, 0, 0, 0, 0)),
+                            Created = new DateTimeOffset(new DateTime(2024, 3, 13, 2, 22, 5, 4, DateTimeKind.Unspecified).AddTicks(6760), new TimeSpan(0, 0, 0, 0, 0)),
                             SoftDelete = false,
                             Title = "The Song of Hiawatha",
-                            Updated = new DateTimeOffset(new DateTime(2024, 2, 10, 2, 4, 37, 479, DateTimeKind.Unspecified).AddTicks(2510), new TimeSpan(0, 0, 0, 0, 0)),
+                            Updated = new DateTimeOffset(new DateTime(2024, 3, 13, 2, 22, 5, 4, DateTimeKind.Unspecified).AddTicks(6760), new TimeSpan(0, 0, 0, 0, 0)),
                             WriterId = 1L
                         });
                 });
@@ -190,11 +214,16 @@ namespace Yeti.Db.Migrations
                     b.Property<string>("AuthorName")
                         .HasColumnType("text");
 
+                    b.Property<long>("LoginId")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("LoginId");
 
                     b.ToTable("Writers");
 
@@ -203,6 +232,7 @@ namespace Yeti.Db.Migrations
                         {
                             Id = 1L,
                             AuthorName = "H. Wadsworth Longfellow",
+                            LoginId = 1L,
                             Username = "longfellow"
                         });
                 });
@@ -250,6 +280,17 @@ namespace Yeti.Db.Migrations
                         .IsRequired();
 
                     b.Navigation("Writer");
+                });
+
+            modelBuilder.Entity("Yeti.Db.Model.Writer", b =>
+                {
+                    b.HasOne("Yeti.Db.Model.Login", "Login")
+                        .WithMany()
+                        .HasForeignKey("LoginId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Login");
                 });
 
             modelBuilder.Entity("Yeti.Db.Model.Manuscript", b =>
