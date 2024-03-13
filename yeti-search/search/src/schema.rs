@@ -17,6 +17,14 @@ diesel::table! {
 }
 
 diesel::table! {
+    Logins (Id) {
+        Id -> Int8,
+        WriterId -> Int8,
+        Serialized -> Text,
+    }
+}
+
+diesel::table! {
     ManuscriptTag (ManuscriptsId, TagsId) {
         ManuscriptsId -> Int8,
         TagsId -> Int8,
@@ -45,6 +53,7 @@ diesel::table! {
 diesel::table! {
     Writers (Id) {
         Id -> Int8,
+        LoginId -> Int8,
         Username -> Text,
         AuthorName -> Nullable<Text>,
     }
@@ -55,5 +64,13 @@ diesel::joinable!(Fragments -> Writers (WriterId));
 diesel::joinable!(ManuscriptTag -> Manuscripts (ManuscriptsId));
 diesel::joinable!(ManuscriptTag -> Tags (TagsId));
 diesel::joinable!(Manuscripts -> Writers (WriterId));
+diesel::joinable!(Writers -> Logins (LoginId));
 
-diesel::allow_tables_to_appear_in_same_query!(Fragments, ManuscriptTag, Manuscripts, Tags, Writers,);
+diesel::allow_tables_to_appear_in_same_query!(
+    Fragments,
+    Logins,
+    ManuscriptTag,
+    Manuscripts,
+    Tags,
+    Writers,
+);

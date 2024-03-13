@@ -9,6 +9,7 @@ public class WriterContext(DbContextOptions<WriterContext> options)
     : DbContext(options)
 {
     public DbSet<Writer> Writers { get; set; } = null!;
+    public DbSet<Login> Logins { get; set; } = null!;
     public DbSet<Manuscript> Manuscripts { get; set; } = null!;
     public DbSet<Fragment> Fragments { get; set; } = null!;
     public DbSet<Tag> Tags { get; set; } = null!;
@@ -27,9 +28,11 @@ public class WriterContext(DbContextOptions<WriterContext> options)
     {
         builder.Entity<Writer>(e =>
         {
-            e.HasOne(x => x.Login);
+            e.HasOne(x => x.Login).WithOne(x => x.Writer);
             e.HasMany(x => x.Manuscripts).WithOne(x => x.Writer);
         });
+
+        builder.Entity<Login>().HasOne(x => x.Writer).WithOne(x => x.Login).HasForeignKey<Writer>(x => x.LoginId);
 
         builder.Entity<Manuscript>(e =>
         {
@@ -66,6 +69,7 @@ public class WriterContext(DbContextOptions<WriterContext> options)
         builder.Entity<Login>().HasData(new Login
         {
             Id = 1,
+            WriterId = 1,
             Serialized = "$argon2id$v=19$m=19456,t=2,p=1$qbl/yTz6vxqviqM2SB9/wQ$qxbxQscW0sy907L8PYeNsTNTxyMZQuLm2r2ZONNFXWk",
         });
 

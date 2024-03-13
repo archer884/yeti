@@ -38,6 +38,9 @@ if (application.Environment.IsDevelopment())
     Console.WriteLine(auth.GenerateToken(1));
 }
 
+var foo = application.Services.GetService<WriterContext>();
+
+
 await application.RunAsync();
 
 WebApplication ConfigureApplication(WebApplication application)
