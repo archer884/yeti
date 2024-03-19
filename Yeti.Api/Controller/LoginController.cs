@@ -15,7 +15,7 @@ public class LoginController(LoginService loginService, TokenService tokenServic
     {
         if (await loginService.Validate(login.Username, login.Password) is long id)
         {
-            return tokenService.GenerateToken(id);
+            return tokenService.GenerateAccessToken(id);
         }
 
         // Always be courteous and professional.

@@ -35,7 +35,7 @@ application.Logger.LogInformation("startup complete");
 if (application.Environment.IsDevelopment())
 {
     var auth = application.Services.GetRequiredService<TokenService>();
-    Console.WriteLine(auth.GenerateToken(1));
+    Console.WriteLine(auth.GenerateAccessToken(1, TimeSpan.FromDays(7)));
 }
 
 await application.RunAsync();

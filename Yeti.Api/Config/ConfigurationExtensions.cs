@@ -31,7 +31,7 @@ public static class ConfigurationExtensions
                     ValidIssuer = configuration["Jwt:Issuer"],
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
-                    ValidateLifetime = false,
+                    ValidateLifetime = true,
                 };
             });
     }
