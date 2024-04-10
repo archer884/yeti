@@ -1,5 +1,6 @@
 .DS_Store
 .env
+/.yeti-index
 /target
 /yeti-index
 bin/
