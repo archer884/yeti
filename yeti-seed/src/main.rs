@@ -51,25 +51,6 @@ impl YetiClient {
             })
             .send()?
             .json()
-
-        // let text = self.client
-        //     .post("http://localhost:5000/fragment")
-        //     .bearer_auth(&self.token)
-        //     .json(&CreateFragment {
-        //         manuscript_id: summary.id,
-        //         heading: None,
-        //         content: text,
-        //     })
-        //     .send()?
-        //     .text()?;
-
-        // match serde_json::from_str(&text) {
-        //     Ok(response) => Ok(response),
-        //     Err(_) => {
-        //         eprintln!("{text}");
-        //         panic!();
-        //     }
-        // }
     }
 }
 
