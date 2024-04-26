@@ -9,8 +9,8 @@ use tantivy::{
     directory::MmapDirectory,
     doc,
     query::QueryParser,
-    schema::{self, Field, Schema, TextFieldIndexing, TextOptions},
-    Document, Index, IndexReader, IndexWriter, Term,
+    schema::{self, Field, Schema, TextFieldIndexing, TextOptions, Value},
+    TantivyDocument, Index, IndexReader, IndexWriter, Term,
 };
 
 use crate::{
@@ -75,6 +75,7 @@ impl FragmentIndex {
         Ok(FragmentWriter {
             writer,
             schema: self.schema.clone(),
+            update_count: 0,
         })
     }
 }
@@ -82,13 +83,14 @@ impl FragmentIndex {
 pub struct FragmentWriter {
     writer: IndexWriter,
     schema: FragmentSchema,
+    update_count: u8,
 }
 
 impl FragmentWriter {
-    // FIXME: I bet this isn't exactly efficient.
     pub fn update(&mut self, fragment: &Fragment) -> crate::Result<()> {
         self.writer.add_document(self.schema.document(fragment))?;
-        self.writer.commit()?;
+        self.update_count += 1;
+        self.commit()?;
         Ok(())
     }
 
@@ -96,6 +98,15 @@ impl FragmentWriter {
         let term = Term::from_field_i64(self.schema.id, id);
         self.writer.delete_term(term);
         self.writer.commit()?;
+        Ok(())
+    }
+
+    pub fn commit(&mut self) -> crate::Result<()> {
+        if self.update_count > 9 {
+            self.writer.commit()?;
+            self.update_count = 0;
+        }
+
         Ok(())
     }
 }
@@ -183,7 +194,7 @@ impl FragmentSchema {
         }
     }
 
-    pub fn document(&self, fragment: &Fragment) -> Document {
+    pub fn document(&self, fragment: &Fragment) -> TantivyDocument {
         doc!(
             self.id => fragment.id,
             self.writer_id => fragment.writer_id,
@@ -194,11 +205,11 @@ impl FragmentSchema {
 }
 
 trait FieldAccess {
-    fn get_i64(self, document: &Document) -> i64;
+    fn get_i64(self, document: &TantivyDocument) -> i64;
 }
 
 impl FieldAccess for Field {
-    fn get_i64(self, document: &Document) -> i64 {
+    fn get_i64(self, document: &TantivyDocument) -> i64 {
         unsafe {
             document
                 .field_values()

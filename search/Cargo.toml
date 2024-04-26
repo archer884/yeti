@@ -7,13 +7,13 @@ edition = "2021"
 
 [dependencies]
 chronograf = "0.1.0"
-diesel = { version = "2.1.4", features = [
+diesel = { version = "2.1.6", features = [
     "postgres",
     "uuid",
     "serde_json",
     "r2d2",
 ] }
-serde = { version = "1.0.197", features = ["derive"] }
-tantivy = "0.21.1"
-thiserror = "1.0.57"
+serde = { version = "1.0.198", features = ["derive"] }
+tantivy = "0.22.0"
+thiserror = "1.0.59"
 tracing = "0.1.40"

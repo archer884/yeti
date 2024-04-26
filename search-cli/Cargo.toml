@@ -6,10 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-diesel = { version = "2.1.4", features = ["postgres", "uuid", "serde_json"] }
+diesel = { version = "2.1.6", features = ["postgres", "uuid", "serde_json"] }
 dotenvy = "0.15.7"
 tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
 search = { path = "../search" }
-clap = { version = "4.5.1", features = ["derive", "wrap_help"] }
-anyhow = "1.0.80"
+clap = { version = "4.5.4", features = ["derive", "wrap_help"] }
+anyhow = "1.0.82"

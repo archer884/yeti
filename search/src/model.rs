@@ -5,6 +5,7 @@ use crate::schema::Fragments;
 
 #[derive(Clone, Copy, Debug)]
 pub enum SearchOperation {
+    Commit,
     Index(i64),
     Remove(i64),
 }

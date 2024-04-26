@@ -1,4 +1,4 @@
-use std::{env, thread};
+use std::{env, thread, time::Duration};
 
 use diesel::{
     r2d2::{self, ConnectionManager, Pool},
@@ -37,6 +37,11 @@ async fn main() -> Result<(), rocket::Error> {
     let _receiver = thread::spawn(move || {
         for op in rx {
             match op {
+                SearchOperation::Commit => {
+                    if let Err(e) = writer.commit() {
+                        tracing::error!(error = ?e, "failed to commit changes");
+                    }
+                }
                 SearchOperation::Index(id) => {
                     if let Err(e) = update_fragment(id, &mut writer, &pool) {
                         tracing::error!(error = ?e, "failed to update fragment id:{id}");
@@ -48,6 +53,14 @@ async fn main() -> Result<(), rocket::Error> {
                     }
                 }
             }
+        }
+    });
+
+    let commit_tx = tx.clone();
+    let _commiter = thread::spawn(move || {
+        loop {
+            thread::sleep(Duration::from_secs(90));
+            commit_tx.send(SearchOperation::Commit).unwrap();
         }
     });
 
