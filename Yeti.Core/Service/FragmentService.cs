@@ -15,7 +15,8 @@ public class FragmentService(
     public async Task<FragmentSummary?> CreateFragment(long writerId, CreateFragment create)
     {
         var fragments = await fragmentSummaryProvider.ByManuscriptId(create.ManuscriptId);
-        var nextSortBy = fragments.Count == 0 ? 0.0 : fragments.Select(x => x.SortBy).DefaultIfEmpty(0.0).Max() + 1.0;
+        var nextSortBy = fragments.NextSortBy();
+
         var fragment = await context.Fragments.AddAsync(new Fragment
         {
             WriterId = writerId,

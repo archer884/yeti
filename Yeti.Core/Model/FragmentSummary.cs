@@ -2,7 +2,7 @@ using Yeti.Db.Model;
 
 namespace Yeti.Core.Model;
 
-public class FragmentSummary
+public class FragmentSummary : ISortable
 {
     public long Id { get; init; }
     public long WriterId { get; init; }
