@@ -10,4 +10,9 @@ public static class Time
     {
         forced = time;
     }
+
+    public static void Unset()
+    {
+        forced = null;
+    }
 }
