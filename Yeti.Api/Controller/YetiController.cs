@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Yeti.Api.Controller;
 
-public class YetiController() : ControllerBase
+public class YetiController : ControllerBase
 {
     const string UserIdClaimType = "id";
 
