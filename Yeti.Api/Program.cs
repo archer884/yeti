@@ -1,7 +1,7 @@
 ﻿using Lamar;
 using Lamar.Microsoft.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
-
+using Microsoft.Extensions.Options;
 using Yeti.Api.Config;
 using Yeti.Api.Service;
 using Yeti.Core;
@@ -83,10 +83,11 @@ void ConfigureServices(ServiceRegistry services)
     services.ConfigureOptions<Configure<IndexOptions>>();
     services.ConfigureOptions<Configure<TokenOptions>>();
 
-    services.AddHttpClient<IndexClient>(x =>
+    services.AddHttpClient<IndexClient>((config, client) =>
     {
-        x.DefaultRequestHeaders.Add("Accept", "application/json");
-        x.BaseAddress = new(configuration["Search:Url"] ?? throw new ConfigurationException("Search:Url"));
+        var url = config.GetRequiredService<IOptions<IndexOptions>>().Value.Url;
+        client.BaseAddress = new(url);
+        client.DefaultRequestHeaders.Add("Accept", "application/json");
     });
 
     // I'm pretty sure using this as a singleton is fine, but I don't really KNOW, I guess...
