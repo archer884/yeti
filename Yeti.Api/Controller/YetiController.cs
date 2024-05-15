@@ -7,7 +7,8 @@ public class YetiController : ControllerBase
 {
     const string UserIdClaimType = "id";
 
-    protected long UserId => TryGetUserId(User);
+    long? userId;
+    protected long UserId => userId ?? (userId = TryGetUserId(User)).Value;
 
     static long TryGetUserId(ClaimsPrincipal user)
     {

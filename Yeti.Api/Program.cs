@@ -90,6 +90,21 @@ void ConfigureServices(ServiceRegistry services)
         client.DefaultRequestHeaders.Add("Accept", "application/json");
     });
 
+    // Do NOT ask how much reading I had to do to find this...
+    // Ok, it was LOTS. I can't bear to delete it yet. This is how to configure the client for
+    // some kind of authorization.
+    // .ConfigurePrimaryHttpMessageHandler(config =>
+    // {
+    //     var options = config.GetRequiredService<IOptions<HotelClientOptions>>().Value;
+    //     var credential = options.HasCredential
+    //         ? new NetworkCredential(options.Username, options.Password)
+    //         : CredentialCache.DefaultNetworkCredentials;
+
+    //     CredentialCache cache = [];
+    //     cache.Add(new(options.BaseUrl), "NTLM", credential);
+    //     return new HttpClientHandler { Credentials = cache };
+    // });
+
     // I'm pretty sure using this as a singleton is fine, but I don't really KNOW, I guess...
     services.AddSingleton<IIndexingService, IndexingService>();
 }
