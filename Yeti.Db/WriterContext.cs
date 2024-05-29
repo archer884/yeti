@@ -5,8 +5,7 @@ using Yeti.Db.Model;
 
 namespace Yeti.Db;
 
-public class WriterContext(DbContextOptions<WriterContext> options)
-    : DbContext(options)
+public class WriterContext(DbContextOptions<WriterContext> options) : DbContext(options)
 {
     public DbSet<Writer> Writers { get; set; } = null!;
     public DbSet<Login> Logins { get; set; } = null!;

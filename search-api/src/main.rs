@@ -30,10 +30,8 @@ async fn main() -> Result<(), rocket::Error> {
     let mut writer = index.writer().unwrap();
 
     // In theory, this results in single-threaded indexing, except that I believe the IndexWriter
-    // itself manages a queue and threadpool. Right now, we commit after every entry, because who
-    // cares, but we could in theory only commit after a given number of operations have been
-    // completed, or after a given amount of time has passed. In any case, the actual load on this
-    // application is expected to light, so it hardly matters.
+    // itself manages a queue and threadpool. In any case, the actual load on this application is
+    // expected to light, so it hardly matters.
     let _receiver = thread::spawn(move || {
         for op in rx {
             match op {
@@ -57,11 +55,9 @@ async fn main() -> Result<(), rocket::Error> {
     });
 
     let commit_tx = tx.clone();
-    let _commiter = thread::spawn(move || {
-        loop {
-            thread::sleep(Duration::from_secs(90));
-            commit_tx.send(SearchOperation::Commit).unwrap();
-        }
+    let _commiter = thread::spawn(move || loop {
+        thread::sleep(Duration::from_secs(90));
+        commit_tx.send(SearchOperation::Commit).unwrap();
     });
 
     let _rocket = rocket::build()
