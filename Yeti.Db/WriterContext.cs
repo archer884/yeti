@@ -13,6 +13,8 @@ public class WriterContext(DbContextOptions<WriterContext> options) : DbContext(
     public DbSet<Fragment> Fragments { get; set; } = null!;
     public DbSet<Tag> Tags { get; set; } = null!;
 
+    // FIXME: override Remove to provide soft delete?
+
     public override EntityEntry<TEntity> Update<TEntity>(TEntity entity)
     {
         if (entity is Tracked tracked)
