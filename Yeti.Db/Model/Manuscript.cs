@@ -1,6 +1,6 @@
 namespace Yeti.Db.Model;
 
-public class Manuscript : Tracked
+public class Manuscript : Tracked, ISoftDeletable
 {
     public long Id { get; set; }
     public long WriterId { get; set; }

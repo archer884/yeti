@@ -69,8 +69,7 @@ public class FragmentService(
             return null;
         }
 
-        fragment.SoftDelete = true;
-        context.Update(fragment);
+        context.Remove(fragment);
         await context.SaveChangesAsync();
         indexingService.Delete(fragment);
         return new FragmentSummary(fragment);

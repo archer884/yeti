@@ -13,8 +13,6 @@ public class WriterContext(DbContextOptions<WriterContext> options) : DbContext(
     public DbSet<Fragment> Fragments { get; set; } = null!;
     public DbSet<Tag> Tags { get; set; } = null!;
 
-    // FIXME: override Remove to provide soft delete?
-
     public override EntityEntry<TEntity> Update<TEntity>(TEntity entity)
     {
         if (entity is Tracked tracked)
@@ -23,6 +21,17 @@ public class WriterContext(DbContextOptions<WriterContext> options) : DbContext(
         }
 
         return base.Update(entity);
+    }
+
+    public override EntityEntry<TEntity> Remove<TEntity>(TEntity entity)
+    {
+        if (entity is ISoftDeletable e)
+        {
+            e.SoftDelete = true;
+            return base.Update(entity);
+        }
+        
+        return base.Remove(entity);
     }
 
     protected override void OnModelCreating(ModelBuilder builder)

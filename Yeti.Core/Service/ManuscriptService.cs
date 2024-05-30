@@ -51,8 +51,7 @@ public class ManuscriptService(
             return null;
         }
 
-        manuscript.SoftDelete = true;
-        context.Update(manuscript);
+        context.Remove(manuscript);
         await context.SaveChangesAsync();
         return new ManuscriptSummary(manuscript);
     }

@@ -1,6 +1,6 @@
 namespace Yeti.Db.Model;
 
-public class Fragment : Tracked
+public class Fragment : Tracked, ISoftDeletable
 {
     public long Id { get; set; }
     public long WriterId { get; set; }
