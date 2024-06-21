@@ -37,17 +37,17 @@ async fn main() -> Result<(), rocket::Error> {
             match op {
                 SearchOperation::Commit => {
                     if let Err(e) = writer.commit() {
-                        tracing::error!(error = ?e, "failed to commit changes");
+                        tracing::error!(error = %e, "failed to commit changes");
                     }
                 }
                 SearchOperation::Index(id) => {
                     if let Err(e) = update_fragment(id, &mut writer, &pool) {
-                        tracing::error!(error = ?e, "failed to update fragment id:{id}");
+                        tracing::error!(error = %e, "failed to update fragment id:{id}");
                     }
                 }
                 SearchOperation::Remove(id) => {
                     if let Err(e) = remove_fragment(id, &mut writer) {
-                        tracing::error!(error = ?e, "failed to remove fragment id:{id}");
+                        tracing::error!(error = %e, "failed to remove fragment id:{id}");
                     }
                 }
             }
