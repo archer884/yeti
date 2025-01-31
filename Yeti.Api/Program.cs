@@ -1,10 +1,10 @@
-﻿using Lamar;
+using Lamar;
 using Lamar.Microsoft.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+
 using Yeti.Api.Config;
 using Yeti.Api.Service;
-using Yeti.Core;
 using Yeti.Core.Config;
 using Yeti.Core.Service;
 using Yeti.Db;
