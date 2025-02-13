@@ -7,17 +7,17 @@ default-run = "search-api" # Why in the blue hell would this work?
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-diesel = { version = "2.1.6", features = [
+diesel = { version = "2.2.7", features = [
     "postgres",
     "uuid",
     "serde_json",
     "r2d2",
 ] }
 dotenvy = "0.15.7"
-flume = "0.11.0"
-rocket = { version = "0.5.0", features = ["json"] }
-serde = { version = "1.0.201", features = ["derive"] }
-tracing = "0.1.40"
-tracing-subscriber = "0.3.18"
+flume = "0.11.1"
+rocket = { version = "0.5.1", features = ["json"] }
+serde = { version = "1.0.217", features = ["derive"] }
+tracing = "0.1.41"
+tracing-subscriber = "0.3.19"
 search = { path = "../search" }
-anyhow = "1.0.83"
+anyhow = "1.0.95"
