@@ -1,5 +1,5 @@
 [workspace]
-members = ["search", "search-api", "search-cli", "yeti-seed"]
+members = ["search", "search-api", "search-cli", "yeti-pw", "yeti-seed"]
 resolver = "2"
 
 [profile.release]
