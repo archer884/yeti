@@ -16,8 +16,8 @@ diesel = { version = "2.2.7", features = [
 dotenvy = "0.15.7"
 flume = "0.11.1"
 rocket = { version = "0.5.1", features = ["json"] }
-serde = { version = "1.0.217", features = ["derive"] }
+serde = { version = "1.0.218", features = ["derive"] }
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
 search = { path = "../search" }
-anyhow = "1.0.95"
+anyhow = "1.0.96"
