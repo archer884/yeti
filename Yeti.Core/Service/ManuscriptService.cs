@@ -56,13 +56,7 @@ public class ManuscriptService(
         return new ManuscriptSummary(manuscript);
     }
 
-    public Task<ManuscriptSummary?> ManuscriptSummary(long id)
-    {
-        return manuscriptSummaryProvider.ById(id);
-    }
+    public Task<ManuscriptSummary?> ManuscriptSummary(long id) => manuscriptSummaryProvider.ById(id);
 
-    public Task<List<FragmentSummary>> FragmentSummaries(long id)
-    {
-        return fragmentSummaryProvider.ByManuscriptId(id);
-    }
+    public Task<List<FragmentSummary>> FragmentSummaries(long id) => fragmentSummaryProvider.ByManuscriptId(id);
 }
