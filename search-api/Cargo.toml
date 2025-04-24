@@ -21,3 +21,4 @@ tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
 search = { path = "../search" }
 anyhow = "1.0.96"
+mimalloc = "0.1.46"

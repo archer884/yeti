@@ -5,6 +5,7 @@ use diesel::{
     PgConnection,
 };
 use flume::Sender;
+use mimalloc::MiMalloc;
 use rocket::{get, post, routes, serde::json::Json, State};
 use search::{
     db,
@@ -16,6 +17,9 @@ mod logging;
 
 const DATABASE_URL: &str = "DATABASE_URL";
 const INDEX_DIRECTORY: &str = "INDEX_DIRECTORY";
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
 
 #[rocket::main]
 async fn main() -> Result<(), rocket::Error> {
