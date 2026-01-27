@@ -1,8 +1,9 @@
 using System.Text;
-using Lamar;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
+
+using Lamar;
 
 using Yeti.Core;
 
@@ -50,19 +51,10 @@ public static class ConfigurationExtensions
                 Type = SecuritySchemeType.Http,
             };
 
-            var scheme = new OpenApiSecurityScheme()
-            {
-                Reference = new OpenApiReference()
-                {
-                    Id = "jwt_auth",
-                    Type = ReferenceType.SecurityScheme,
-                },
-            };
-
-            var requirements = new OpenApiSecurityRequirement() { { scheme, [] } };
+            OpenApiSecurityRequirement requirements = new() { { new("jwt_auth"), [] } };
 
             swagger.AddSecurityDefinition("jwt_auth", definition);
-            swagger.AddSecurityRequirement(requirements);
+            swagger.AddSecurityRequirement(_ => requirements);
         });
     }
 }
