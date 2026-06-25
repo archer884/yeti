@@ -57,8 +57,10 @@ cargo run -p search-cli -- initialize                                         # 
 Each service has a Dockerfile (`Yeti.Api/`, `Yeti.Web/`, `search-api/`, `Yeti.Db/`) and they're
 wired together in `docker-compose.yml`. Services address each other by service name over the
 compose network (e.g. the apps' `Search__Url` is `http://search-api:8000`, and the DB host is
-`db`). Host ports: reader site `5002`, API `5050` (5000 is taken by macOS AirPlay Receiver),
-search-api `8000`, postgres `5432`.
+`db`). **Caddy is the single front door** (`Caddyfile` + the `caddy` service): it listens on host
+`80`/`443` and routes `/api/*` → `api` (stripping the prefix) and everything else → `web`, so the SPA
+and the API are same-origin and there is no CORS. `web` and `api` are internal (no host ports);
+search-api `8000` and postgres `5432` are still published for tooling.
 
 ```sh
 docker compose up -d --build                                                  # build + run everything
@@ -107,8 +109,9 @@ npm run format      # prettier
 
 `npm run build` emits straight into `Yeti.Web/wwwroot/author/` (vite `build.outDir`), so after a
 build `dotnet run --project Yeti.Web` serves the SPA at `/author`. In dev the SPA runs on Vite and
-calls `Yeti.Api` (port 5000) cross-origin — the API's CORS policy (`Cors:Origins` in
-`Yeti.Api/appsettings.json`) allows the Vite and Yeti.Web origins.
+calls the API via same-origin `/api/*` paths — Vite's dev server proxies `/api` to
+`http://localhost:5000` (stripping the prefix), mirroring the Caddy edge in production, so there's
+no CORS in either environment.
 
 ## Architecture
 
@@ -120,13 +123,15 @@ on Core + Db). `Yeti.Test` references `Yeti.Core` only.
 **`Yeti.Api`** — entry point `Program.cs`. Uses **Lamar** as the DI container
 (`ServiceRegistry`, registered via `ConfigureServices`). JWT bearer auth; Swagger only in
 Development. The environment is driven by the `"Environment"` key in `appsettings.json` (the
-code sets `ASPNETCORE_ENVIRONMENT` from it). `WriterContext` is a pooled Npgsql DbContext. A CORS
-policy (`"YetiWeb"`, `Cors:Origins`) allows the author SPA and `Yeti.Web` to call it cross-origin.
+code sets `ASPNETCORE_ENVIRONMENT` from it). `WriterContext` is a pooled Npgsql DbContext. Behind
+Caddy it's reached same-origin at `/api/*` (the prefix is stripped at the edge), so there is no
+CORS policy.
 
 - Controllers live in `Yeti.Api/Controller/` and derive from `YetiController`, which exposes
-  `UserId` (parsed from the JWT `"id"` claim). Write endpoints are `[Authorize]`; read/search
-  endpoints in `LoginController`, `ReadController`, `SearchController`, `TestController` are
-  anonymous.
+  `UserId` (via the shared `ClaimsPrincipalExtensions.GetUserId` in `Yeti.Core`, which reads the
+  `ClaimTypes.NameIdentifier` claim emitted by `TokenService`). Write endpoints are `[Authorize]`;
+  read/search endpoints in `LoginController`, `ReadController`, `SearchController`,
+  `TestController` are anonymous.
 - `TokenService` (in `Yeti.Api/Service/`) generates JWTs. Defaults: access 15 min, refresh
   30 days. On dev startup the API prints a 7-day token to stdout for easy testing.
 - Config helpers in `Yeti.Api/Config/`: `ConfigurationExtensions` (auth + Swagger setup),

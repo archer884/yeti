@@ -1,7 +1,7 @@
-using Lamar;
-using Lamar.Microsoft.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Lamar;
+using Lamar.Microsoft.DependencyInjection;
 
 using Yeti.Api.Config;
 using Yeti.Api.Service;
@@ -49,7 +49,6 @@ WebApplication ConfigureApplication(WebApplication application)
     }
 
     application.MapControllers();
-    application.UseCors("YetiWeb");
     application.UseAuthentication();
     application.UseAuthorization();
     return application;
@@ -76,11 +75,6 @@ void ConfigureServices(ServiceRegistry services)
     services.AddEndpointsApiExplorer();
     services.AddHttpContextAccessor();
     services.AddSwaggerGen();
-
-    // The author SPA (and Yeti.Web reader site) call this API cross-origin.
-    var corsOrigins = configuration.GetSection("Cors:Origins").Get<string[]>() ?? [];
-    services.AddCors(options => options.AddPolicy("YetiWeb", policy =>
-        policy.WithOrigins(corsOrigins).AllowAnyHeader().AllowAnyMethod()));
 
     services.AddDbContextPool<WriterContext>(
         config => config.UseNpgsql(configuration.GetConnectionString("WriterContext")));

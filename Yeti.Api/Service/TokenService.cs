@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Microsoft.Extensions.Options;
 
 using Yeti.Api.Config;
@@ -33,7 +34,7 @@ public class TokenService(IOptions<TokenOptions> options)
 
     JwtSecurityToken TokenWithLifetime(long userId, TimeSpan lifetime) => new(
         issuer: options.Value.Issuer,
-        claims: [new("id", userId.ToString())],
+        claims: [new(ClaimTypes.NameIdentifier, userId.ToString())],
         signingCredentials: options.Value.Credentials,
         expires: Time.Now.DateTime.Add(lifetime)
     );

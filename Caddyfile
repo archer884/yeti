@@ -1,0 +1,18 @@
+# Local dev: plain HTTP on :80. For production, replace the site label with your real
+# domain (e.g. `yeti.example.com { ... }`) and Caddy auto-provisions + renews HTTPS.
+http://localhost {
+	# Compression — cheap win on minimal hardware / bandwidth.
+	encode zstd gzip
+
+	# JSON API: strip the /api prefix and forward to Yeti.Api. The API's routes are bare
+	# (/api/manuscript -> api:8080/manuscript), and the /api namespace keeps them from
+	# colliding with the reader site's own /manuscript, /tag, /login, ... pages.
+	handle_path /api/* {
+		reverse_proxy api:8080
+	}
+
+	# Everything else: the reader site (Razor pages) and the /author SPA.
+	handle {
+		reverse_proxy web:8080
+	}
+}

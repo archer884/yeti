@@ -37,17 +37,22 @@ cargo run -p search-api                    # search on 8000 (only if exercising 
 cargo run -p search-cli -- initialize      # build the Tantivy index (once / as needed)
 ```
 
-The host apps already target `localhost:5432` (`.env` + `appsettings.json`), and the SPA dev server
-(`npm run dev` in `yeti-svelte/`, needs nvm) is in the api's CORS allowed origins. Apply the schema
-once with `dotnet ef database update --project Yeti.Db -- .env`; the `yeti-db` volume keeps it.
+The host apps already target `localhost:5432` (`.env` + `appsettings.json`). The SPA dev server
+(`npm run dev` in `yeti-svelte/`, needs nvm) proxies same-origin `/api` to the local api, so no
+CORS. Apply the schema once with `dotnet ef database update --project Yeti.Db -- .env`; the
+`yeti-db` volume keeps it.
 
-There are two modes that **share the same host ports** (5000/5002/8000/5432), so don't run both at
-once:
+There are two modes:
 
-- *dev* — `docker compose up -d db`, run the apps locally (above).
+- *dev* — `docker compose up -d db`, run the apps locally on `5000`/`5002`/`8000` (above). The SPA
+  dev server proxies `/api` to `localhost:5000`.
 - *full stack* — `docker compose up -d --build` runs the db, a one-shot migration, the Rust
-  `search-api`, and the .NET api/web in containers (api on host `5050` since macOS AirPlay holds
-  `5000`). Stop the app containers to switch back to dev: `docker compose stop api web search-api`.
+  `search-api`, and the .NET api/web in containers behind **Caddy on host `80`** (routes `/api/*`
+  → api, stripping the prefix, and everything else → web; api/web are internal). Browse
+  `http://localhost`.
+
+The modes only collide on the published tooling ports (`5432`, `8000`), so stop those if you run
+both: `docker compose stop search-api` (and `db` if you run postgres locally too).
 
 You can mix freely too — e.g. keep the db + search-api containerized and run only Yeti.Api/Yeti.Web
 on the host for debugging.

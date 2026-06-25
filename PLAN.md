@@ -13,7 +13,7 @@ The bimodal frontend is built and wired:
 - **Author SPA (`yeti-svelte`)** — mounted at `/author`, built straight into `Yeti.Web/wwwroot/author`.
   **Still the default scaffold** — no real UI yet.
 - **Backend** — `Yeti.Api` (JWT) + `Yeti.Core` + `Yeti.Db` + Rust `search-api` all functional.
-  CORS lets the SPA and reader site call the API cross-origin.
+  Caddy puts the SPA, reader site, and `/api` on one origin (no CORS).
 
 Everything builds clean (.NET 10) and the 3 tests pass. The dev DB runs locally via
 `docker compose up -d` (postgres 17, seed: the `longfellow` writer + a Hiawatha manuscript).
@@ -91,10 +91,8 @@ for in the original vision but **there is no view/read telemetry to derive it fr
   `Yeti.Db` one-shot migration runner; `docker-compose.yml` brings up the whole stack (db →
   migrate → search-api → api/web) and `docker compose up -d --build` produces a working site.
   Remaining hardening: switch the API/web from `Development` + committed secrets to `Production`
-  with secret management; a reverse proxy putting `/author/*`, reader routes, and `/api/*` on one
-  origin (would also drop the CORS dependency); and rebuilding the Rust image with full LTO for
-  the production binary. Note the API is published on host port `5050` since macOS AirPlay holds
-  `5000`.
+  with secret management (Caddy's automatic HTTPS kicks in once the `Caddyfile` site label is a
+  real domain), and rebuild the Rust image with full LTO for the production binary.
 - **Test coverage** — only `FragmentExtensions.NextSortBy` is tested (3 tests). The reader site
   (page models, auth flow) and core services have no coverage.
 

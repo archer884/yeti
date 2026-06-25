@@ -1,7 +1,6 @@
-using Lamar;
-using Lamar.Microsoft.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Lamar.Microsoft.DependencyInjection;
 
 using Yeti.Core.Config;
 using Yeti.Core.Service;
@@ -9,9 +8,7 @@ using Yeti.Db;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseLamar();
-
 builder.Services.AddRazorPages();
-
 builder.Services.AddDbContextPool<WriterContext>(
     options => options.UseNpgsql(builder.Configuration.GetConnectionString("WriterContext")));
 
@@ -43,7 +40,6 @@ if (app.Environment.IsDevelopment())
 app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapRazorPages();
 
 // The author SPA is mounted at /author and served from wwwroot/author

@@ -11,4 +11,15 @@ export default defineConfig({
     outDir: '../Yeti.Web/wwwroot/author',
     emptyOutDir: true,
   },
+  server: {
+    // Same-origin /api requests are proxied to the locally-run API, mirroring the Caddy
+    // edge in production (which strips /api). Keeps the SPA CORS-free in dev too.
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
+  },
 })

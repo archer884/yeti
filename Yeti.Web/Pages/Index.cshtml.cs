@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
+using Yeti.Core;
 using Yeti.Core.Model;
 using Yeti.Core.Provider;
 using Yeti.Core.Service;
@@ -17,7 +18,7 @@ public class IndexModel(
     public ManuscriptListPage UpdatedPage { get; set; } = null!;
     public ManuscriptListPage? YourPage { get; set; }
 
-    long? WriterId => long.TryParse(User.FindFirst("id")?.Value, out var id) ? id : null;
+    long? WriterId => User.GetUserId();
 
     public async Task OnGetAsync()
     {

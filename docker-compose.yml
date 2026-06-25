@@ -62,8 +62,6 @@ services:
     environment:
       ConnectionStrings__WriterContext: *cs
       Search__Url: "http://search-api:8000"
-    ports:
-      - "5050:8080"   # 5000 is grabbed by macOS AirPlay Receiver
 
   web:
     build:
@@ -78,8 +76,23 @@ services:
     environment:
       ConnectionStrings__WriterContext: *cs
       Search__Url: "http://search-api:8000"
+
+  # Single front door: routes /api/* -> api, everything else -> web. Same-origin for the
+  # SPA, so no CORS. Plain HTTP on :80 for local; swap the site label in Caddyfile for a
+  # real domain to get automatic HTTPS.
+  caddy:
+    image: caddy:2-alpine
+    container_name: yeti-caddy
+    depends_on:
+      - api
+      - web
     ports:
-      - "5002:8080"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
 
   # Opt-in tooling (one-off index rebuilds): docker compose --profile tools run --rm search-cli initialize
   search-cli:
@@ -100,3 +113,5 @@ services:
 volumes:
   yeti-db:
   yeti-index:
+  caddy_data:
+  caddy_config:

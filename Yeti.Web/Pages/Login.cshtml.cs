@@ -32,7 +32,7 @@ public class LoginModel(LoginService loginService) : PageModel
             return RedirectToPage();
         }
 
-        var identity = new ClaimsIdentity(new[] { new Claim("id", writerId.Value.ToString()) }, CookieScheme);
+        var identity = new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, writerId.Value.ToString()) }, CookieScheme);
         await HttpContext.SignInAsync(CookieScheme, new ClaimsPrincipal(identity));
         return RedirectToPage("/Index");
     }
