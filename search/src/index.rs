@@ -6,12 +6,12 @@ use std::{
 
 use diesel::{connection::LoadConnection, pg::Pg};
 use tantivy::{
-    Index, IndexReader, IndexWriter, TantivyDocument, Term,
     collector::TopDocs,
     directory::MmapDirectory,
     doc,
     query::QueryParser,
     schema::{self, Field, Schema, TextFieldIndexing, TextOptions, Value},
+    Index, IndexReader, IndexWriter, TantivyDocument, Term,
 };
 
 use crate::{
@@ -76,75 +76,75 @@ impl FragmentIndex {
     pub fn writer(&self) -> crate::Result<FragmentWriter> {
         let writer = self.index.writer(DEFAULT_ARENA_SIZE * MEGABYTE)?;
         Ok(FragmentWriter {
-            writer,
             schema: self.schema.clone(),
-            gate: WriterGate::new(),
+            gate: WriterGate::new(writer),
         })
     }
 }
 
-#[derive(Debug)]
 struct WriterGate {
-    time: Instant,
+    writer: IndexWriter,
     count: usize,
+    last_commit: Instant,
 }
 
 impl WriterGate {
-    fn new() -> Self {
+    fn new(writer: IndexWriter) -> Self {
         Self {
-            time: Instant::now(),
+            writer,
             count: 0,
+            last_commit: Instant::now(),
         }
     }
 
-    fn increment(&mut self) {
+    fn add_document(&mut self, document: TantivyDocument) -> crate::Result<()> {
+        self.writer.add_document(document)?;
         self.count += 1;
+        self.commit()
     }
 
-    fn reset(&mut self) {
-        self.count = 0;
-        self.time = Instant::now();
+    fn delete_term(&mut self, term: Term) -> crate::Result<()> {
+        self.writer.delete_term(term);
+        self.count += 1;
+        self.commit()
+    }
+
+    fn commit(&mut self) -> crate::Result<()> {
+        if self.should_commit() {
+            self.writer.commit()?;
+            self.count = 0;
+            self.last_commit = Instant::now();
+        }
+
+        Ok(())
     }
 
     fn should_commit(&self) -> bool {
         const MIN_WRITE_COUNT: usize = 10;
         const MIN_ELAPSED_TIME: Duration = Duration::from_secs(45);
 
-        self.count > 0 && {
-            self.count >= MIN_WRITE_COUNT || self.time.elapsed() >= MIN_ELAPSED_TIME
-        }
+        self.count > 0
+            && (self.count >= MIN_WRITE_COUNT || self.last_commit.elapsed() >= MIN_ELAPSED_TIME)
     }
 }
 
 pub struct FragmentWriter {
-    writer: IndexWriter,
     schema: FragmentSchema,
     gate: WriterGate,
 }
 
 impl FragmentWriter {
     pub fn update(&mut self, fragment: &Fragment) -> crate::Result<()> {
-        self.writer.add_document(self.schema.document(fragment))?;
-        self.gate.increment();
-        self.commit()?;
-        Ok(())
+        self.gate.add_document(self.schema.document(fragment))
     }
 
     pub fn remove(&mut self, id: i64) -> crate::Result<()> {
         let term = Term::from_field_i64(self.schema.id, id);
-        self.writer.delete_term(term);
-        self.gate.increment();
-        self.commit()?;
-        Ok(())
+        self.gate.delete_term(term)
     }
 
     pub fn commit(&mut self) -> crate::Result<()> {
-        if self.gate.should_commit() {
-            self.writer.commit()?;
-            self.gate.reset();
-        }
-
-        Ok(())
+        self.gate.commit()
     }
 }
 
