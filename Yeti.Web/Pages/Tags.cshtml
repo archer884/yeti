@@ -1,0 +1,10 @@
+@page "{value}"
+@model TagsModel
+@{
+    ViewData["Title"] = string.Join(" + ", Model.Values.Select(v => "#" + v));
+}
+
+<h1>@string.Join(" + ", Model.Values.Select(v => "#" + v))</h1>
+<ul id="tags-list">
+    <partial name="_ManuscriptListPage" model="Model.List" />
+</ul>

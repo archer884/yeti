@@ -1,0 +1,21 @@
+@model Yeti.Web.ManuscriptListPage
+
+@foreach (var manuscript in Model.Items)
+{
+    <li>
+        <a href="/Manuscript/@manuscript.Id">@manuscript.Title</a>
+        @if (manuscript.Blurb is not null)
+        {
+            <span> — @manuscript.Blurb</span>
+        }
+    </li>
+}
+@if (Model.LoadMoreUrl is string url)
+{
+    <li class="load-more-row">
+        <button type="button"
+                hx-get="@url"
+                hx-target="closest .load-more-row"
+                hx-swap="outerHTML">Load more</button>
+    </li>
+}

@@ -11,10 +11,24 @@ body {
     margin: 0;
 }
 
+header {
+    display: flex;
+    align-items: baseline;
+    gap: 1.5rem;
+    border-bottom: 1px solid;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+
 header .brand {
     font-weight: bold;
     font-size: 1.25rem;
     text-decoration: none;
+}
+
+header nav {
+    display: flex;
+    gap: 1rem;
 }
 
 h1 {
@@ -33,4 +47,42 @@ article {
 
 a {
     color: inherit;
+}
+
+input[type="search"] {
+    width: 100%;
+    padding: 0.5rem;
+    font: inherit;
+}
+
+.result {
+    margin: 1rem 0;
+    border-bottom: 1px solid;
+    padding-bottom: 1rem;
+}
+
+.result h3 {
+    margin: 0;
+}
+
+.result .meta {
+    color: inherit;
+    opacity: 0.7;
+    margin: 0.25rem 0;
+    font-size: 0.9rem;
+}
+
+.result .excerpt {
+    margin: 0.25rem 0;
+}
+
+.load-more-row {
+    list-style: none;
+    margin-top: 0.5rem;
+}
+
+.load-more-row button,
+button {
+    font: inherit;
+    cursor: pointer;
 }

@@ -101,9 +101,15 @@ with no client framework. Entry point `Program.cs`; uses **Lamar** like `Yeti.Ap
 auth (logged-in readers), and a pooled `WriterContext`. Pages live in `Yeti.Web/Pages/` and call
 `Yeti.Core` services/providers directly (no HTTP hop):
 - `Index` (home: recently-added/updated via `RecentService`), `Manuscript` (landing), `Read`
-  (a fragment via `FragmentDetailProvider`).
-- htmx (`wwwroot/lib/htmx.min.js`) drives interactivity — page handlers return Razor partials when
-  the `HX-Request` header is present.
+  (a fragment via `FragmentDetailProvider`), `Search` (full-text via `SearchService` → Rust
+  search-api), `Tag`/`Tags` (browse by tag via `TagSearchService`).
+- htmx (`wwwroot/lib/htmx.min.js`) drives interactivity: live search (`hx-get` to a `?handler=`
+  partial), and **load-more** pagination on home/search/tag lists (named handlers return shared
+  partials `_ManuscriptListPage`/`_SearchResults`; the load-more button swaps its own row via
+  `hx-target="closest .load-more-row"` + `hx-swap="outerHTML"`).
+- Full-text search needs the Rust search-api; `Program.cs` wires `IndexOptions`/`IndexClient`
+  (`AddConfigurable<IndexOptions>()` + a typed `HttpClient<IndexClient>`), and `Search:Url` lives
+  in `appsettings.json`.
 - The **author SPA is mounted at `/author`** via `MapFallbackToFile("/author/{*path}", ...)`,
   serving the production build of `yeti-vue` from `wwwroot/author/`.
 

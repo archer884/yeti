@@ -1,0 +1,19 @@
+@page
+@model SearchModel
+@{
+    ViewData["Title"] = "Search";
+}
+
+<h1>Search</h1>
+<input type="search" name="q" value="@Model.Query" placeholder="Search fragments…"
+       autocomplete="off" autofocus
+       hx-get="/Search?handler=Results"
+       hx-trigger="keyup changed delay:400ms, search"
+       hx-target="#search-results" />
+
+<div id="search-results">
+    @if (Model.ResultsPage is not null)
+    {
+        <partial name="_SearchResults" model="Model.ResultsPage" />
+    }
+</div>
