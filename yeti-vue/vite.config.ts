@@ -19,4 +19,9 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  build: {
+    // Emit the production build straight into Yeti.Web so it's served at /author.
+    outDir: '../Yeti.Web/wwwroot/author',
+    emptyOutDir: true,
+  },
 })

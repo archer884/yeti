@@ -34,7 +34,7 @@ The project is a .NET backend + reader site, a Rust search service, and a Vue au
   `-Ctarget-cpu=native` and `lld` linker; release profile uses `lto`, single codegen unit,
   `panic=abort`.
 - `node`/`npm` are **installed via nvm** and NOT on the default PATH. Prefix shell commands with
-  `source ~/.nvm/nvm/nvm.sh &&` (node v24) when running anything in `yeti-vue/`.
+  `source ~/.nvm/nvm.sh &&` (node v24) when running anything in `yeti-vue/`.
 - PostgreSQL. The dev DB is remote; connection strings live in `.env` (gitignored) and in
   `Yeti.Api/appsettings.json` (committed, contains dev secrets).
 
@@ -67,12 +67,17 @@ cargo run -p yeti-seed -- "<gutenberg-path>" "<auth-token>"
 ### Vue (run from `yeti-vue/`, needs nvm sourced)
 
 ```sh
-npm run dev         # vite dev server
-npm run build       # type-check + production build
+npm run dev         # vite dev server (http://localhost:5173/author/)
+npm run build       # type-check + production build -> Yeti.Web/wwwroot/author/
 npm run type-check  # vue-tsc
 npm run lint        # oxlint + eslint (with --fix)
 npm run format      # prettier
 ```
+
+`npm run build` emits straight into `Yeti.Web/wwwroot/author/` (vite `build.outDir`), so after a
+build `dotnet run --project Yeti.Web` serves the SPA at `/author`. In dev the SPA runs on Vite and
+calls `Yeti.Api` (port 5000) cross-origin — the API's CORS policy (`Cors:Origins` in
+`Yeti.Api/appsettings.json`) allows the Vite and Yeti.Web origins.
 
 ## Architecture
 
@@ -84,7 +89,8 @@ on Core + Db). `Yeti.Test` references `Yeti.Core` only.
 **`Yeti.Api`** — entry point `Program.cs`. Uses **Lamar** as the DI container
 (`ServiceRegistry`, registered via `ConfigureServices`). JWT bearer auth; Swagger only in
 Development. The environment is driven by the `"Environment"` key in `appsettings.json` (the
-code sets `ASPNETCORE_ENVIRONMENT` from it). `WriterContext` is a pooled Npgsql DbContext.
+code sets `ASPNETCORE_ENVIRONMENT` from it). `WriterContext` is a pooled Npgsql DbContext. A CORS
+policy (`"YetiWeb"`, `Cors:Origins`) allows the author SPA and `Yeti.Web` to call it cross-origin.
 
 - Controllers live in `Yeti.Api/Controller/` and derive from `YetiController`, which exposes
   `UserId` (parsed from the JWT `"id"` claim). Write endpoints are `[Authorize]`; read/search
@@ -159,11 +165,12 @@ every 90 s. Uses `mimalloc` as the global allocator. The C# side talks to this s
 
 ### Vue frontend (author SPA)
 
-Vue 3 + Vite 6 + Pinia + TypeScript. `@` is aliased to `./src`. Vite `base` is `'/author/'` so the
-production build is served under `/author` by `Yeti.Web`. Largely the default scaffold right now —
-real UI work has not started (it replaced an earlier `yeti-remix` frontend; see git history). It
-consumes the `Yeti.Api` JSON endpoints with JWT bearer, in contrast to `Yeti.Web`'s server-rendered
-reader pages — this is the intended **bimodal** split (SPA for authors, SSR for readers).
+Vue 3 + Vite 6 + Pinia + TypeScript. `@` is aliased to `./src`. Vite `base` is `'/author/'` and
+`build.outDir` is `../Yeti.Web/wwwroot/author`, so `npm run build` lands the production bundle
+where `Yeti.Web` serves it at `/author`. Largely the default scaffold right now — real UI work
+has not started (it replaced an earlier `yeti-remix` frontend; see git history). It consumes the
+`Yeti.Api` JSON endpoints with JWT bearer, in contrast to `Yeti.Web`'s server-rendered reader
+pages — this is the intended **bimodal** split (SPA for authors, SSR for readers).
 
 ## Domain model & key concepts
 
