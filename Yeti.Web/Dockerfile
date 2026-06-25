@@ -1,9 +1,9 @@
-# Build the author SPA (yeti-vue) into Yeti.Web/wwwroot/author.
-FROM node:22-alpine AS spa
-WORKDIR /yeti-vue
-COPY yeti-vue/package*.json ./
+# Build the author SPA (yeti-svelte) into Yeti.Web/wwwroot/author.
+FROM node:24-alpine AS spa
+WORKDIR /yeti-svelte
+COPY yeti-svelte/package*.json ./
 RUN npm ci
-COPY yeti-vue/ ./
+COPY yeti-svelte/ ./
 RUN mkdir -p /Yeti.Web/wwwroot/author && npm run build
 
 # Build the .NET reader site, layered with the SPA output.

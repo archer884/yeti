@@ -47,7 +47,7 @@ app.UseAuthorization();
 app.MapRazorPages();
 
 // The author SPA is mounted at /author and served from wwwroot/author
-// (the production build of yeti-vue, configured with base '/author/').
+// (the production build of yeti-svelte, configured with base '/author/').
 app.MapFallbackToFile("/author/{*path}", "author/index.html");
 
 app.Run();

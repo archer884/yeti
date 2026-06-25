@@ -11,7 +11,7 @@ own status notes.
 
 ## Polyglot monorepo
 
-The project is a .NET backend + reader site, a Rust search service, and a Vue author SPA in one repo.
+The project is a .NET backend + reader site, a Rust search service, and a Svelte author SPA in one repo.
 
 | Path | Lang | Role |
 |------|------|------|
@@ -25,7 +25,7 @@ The project is a .NET backend + reader site, a Rust search service, and a Vue au
 | `search-cli/` | Rust | CLI to rebuild/query the index |
 | `yeti-pw/` | Rust | Utility to argon2-hash a password |
 | `yeti-seed/` | Rust | CLI to bulk-import Project Gutenberg texts via the API |
-| `yeti-vue/` | TS/Vue 3 | Author SPA, built to `/author/` (Vite, base `'/author/'`) |
+| `yeti-svelte/` | TS/Svelte 5 | Author SPA, built to `/author/` (Vite, base `'/author/'`) |
 
 ## Prerequisites & tooling
 
@@ -34,7 +34,7 @@ The project is a .NET backend + reader site, a Rust search service, and a Vue au
   `-Ctarget-cpu=native` and `lld` linker; release profile uses `lto`, single codegen unit,
   `panic=abort`.
 - `node`/`npm` are **installed via nvm** and NOT on the default PATH. Prefix shell commands with
-  `source ~/.nvm/nvm.sh &&` (node v24) when running anything in `yeti-vue/`.
+  `source ~/.nvm/nvm.sh &&` (node v24) when running anything in `yeti-svelte/`.
 - PostgreSQL. The dev DB runs in Docker via `docker compose up -d` (see `docker-compose.yml` —
   `postgres:17`, user `yetiuser`, db `yeti`, host port 5432; data in the `yeti-db` named volume).
   Connection strings live in `.env` (gitignored, for the Rust side + EF design-time factory) and in
@@ -96,13 +96,12 @@ cargo run -p yeti-seed -- "<gutenberg-path>" "<auth-token>"
 `search-api` and `search-cli` read `DATABASE_URL` and `INDEX_DIRECTORY` from `.env` (via
 `dotenvy`). The index directory defaults to `./.yeti-index`.
 
-### Vue (run from `yeti-vue/`, needs nvm sourced)
+### Svelte (run from `yeti-svelte/`, needs nvm sourced)
 
 ```sh
 npm run dev         # vite dev server (http://localhost:5173/author/)
-npm run build       # type-check + production build -> Yeti.Web/wwwroot/author/
-npm run type-check  # vue-tsc
-npm run lint        # oxlint + eslint (with --fix)
+npm run build       # production build -> Yeti.Web/wwwroot/author/
+npm run check       # svelte-check (type-check)
 npm run format      # prettier
 ```
 
@@ -150,7 +149,7 @@ auth (logged-in readers), and a pooled `WriterContext`. Pages live in `Yeti.Web/
   (`AddConfigurable<IndexOptions>()` + a typed `HttpClient<IndexClient>`), and `Search:Url` lives
   in `appsettings.json`.
 - The **author SPA is mounted at `/author`** via `MapFallbackToFile("/author/{*path}", ...)`,
-  serving the production build of `yeti-vue` from `wwwroot/author/`.
+  serving the production build of `yeti-svelte` from `wwwroot/author/`.
 - **Reader auth** is cookie-based (the `"Cookie"` scheme): `Login` validates via the existing
   `LoginService`/`HashProvider` and calls `HttpContext.SignInAsync` with an `"id"` claim (the
   writer id); `Logout` signs out. Forms use Razor Pages' auto antiforgery. Reader pages stay
@@ -198,14 +197,14 @@ every 90 s. Uses `mimalloc` as the global allocator. The C# side talks to this s
 `IndexClient`; `IndexingService` fires index updates as best-effort, fire-and-forget `Task.Run`s
 (failures are logged, not thrown).
 
-### Vue frontend (author SPA)
+### Svelte frontend (author SPA)
 
-Vue 3 + Vite 6 + Pinia + TypeScript. `@` is aliased to `./src`. Vite `base` is `'/author/'` and
-`build.outDir` is `../Yeti.Web/wwwroot/author`, so `npm run build` lands the production bundle
+Svelte 5 + Vite + TypeScript (runes for reactivity, no external state lib). Vite `base` is `'/author/'`
+and `build.outDir` is `../Yeti.Web/wwwroot/author`, so `npm run build` lands the production bundle
 where `Yeti.Web` serves it at `/author`. Largely the default scaffold right now — real UI work
-has not started (it replaced an earlier `yeti-remix` frontend; see git history). It consumes the
-`Yeti.Api` JSON endpoints with JWT bearer, in contrast to `Yeti.Web`'s server-rendered reader
-pages — this is the intended **bimodal** split (SPA for authors, SSR for readers).
+has not started (it replaced an earlier Vue frontend, which itself replaced `yeti-remix`; see git
+history). It consumes the `Yeti.Api` JSON endpoints with JWT bearer, in contrast to `Yeti.Web`'s
+server-rendered reader pages — this is the intended **bimodal** split (SPA for authors, SSR for readers).
 
 ## Domain model & key concepts
 
@@ -235,7 +234,7 @@ pages — this is the intended **bimodal** split (SPA for authors, SSR for reade
 
 ## Gotchas
 
-- `node`/`npm` are **not on PATH** — source nvm before any `yeti-vue` command.
+- `node`/`npm` are **not on PATH** — source nvm before any `yeti-svelte` command.
 - `.env` is gitignored. It must define `CONNECTION_STRING` (for EF migrations via the C#
   design factory), `DATABASE_URL` (for the Rust side), and `INDEX_DIRECTORY`. Credentials are
   `yetiuser`/`yetipassword` (matching `docker-compose.yml`), host `localhost:5432`.

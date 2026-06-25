@@ -10,7 +10,7 @@ The bimodal frontend is built and wired:
 - **Reader site (`Yeti.Web`)** — server-rendered Razor Pages + htmx: home (recently-added/updated
   + "Your manuscripts" for logged-in readers), manuscript landing, fragment reader, full-text
   search, tag browse, load-more pagination, and reader (cookie) auth. Anonymous + SEO-friendly.
-- **Author SPA (`yeti-vue`)** — mounted at `/author`, built straight into `Yeti.Web/wwwroot/author`.
+- **Author SPA (`yeti-svelte`)** — mounted at `/author`, built straight into `Yeti.Web/wwwroot/author`.
   **Still the default scaffold** — no real UI yet.
 - **Backend** — `Yeti.Api` (JWT) + `Yeti.Core` + `Yeti.Db` + Rust `search-api` all functional.
   CORS lets the SPA and reader site call the API cross-origin.
@@ -33,7 +33,7 @@ by the existing JSON API (JWT bearer):
 - **Tagging** — add/remove tags via `TagController` (`/tag/add`, `/tag/remove`).
 - **Profile** — writer display name (`Writer.AuthorName`) editing (no endpoint exists yet — see
   "API gaps" below).
-- **Routing** — add `vue-router` (the scaffold has none) and a layout. SPA fallback at `/author/*`
+- **Routing** — add a router (the scaffold has none) and a layout. SPA fallback at `/author/*`
   already works in `Yeti.Web`.
 
 ## Trending / popular
@@ -87,7 +87,7 @@ for in the original vision but **there is no view/read telemetry to derive it fr
   with; fix only if it bothers.
 - **Pagination param** — reader pages use `?p=N`; ensure consistent across any new pages.
 - **Deployment topology** — the container story is in place: Dockerfiles for `Yeti.Api`, `Yeti.Web`
-  (multi-stage: builds the `yeti-vue` SPA, then the .NET app), the Rust `search-api`, and a
+  (multi-stage: builds the `yeti-svelte` SPA, then the .NET app), the Rust `search-api`, and a
   `Yeti.Db` one-shot migration runner; `docker-compose.yml` brings up the whole stack (db →
   migrate → search-api → api/web) and `docker compose up -d --build` produces a working site.
   Remaining hardening: switch the API/web from `Development` + committed secrets to `Production`
@@ -104,5 +104,5 @@ for in the original vision but **there is no view/read telemetry to derive it fr
    Drives registration, preference model, and the auth-model alignment.
 2. **What counts as "trending"** — recent velocity vs all-time popularity; and whether anonymous
    reads are counted.
-3. **Author SPA framework appetite** — Vue is kept (least churn) but was never a deliberate
-   choice. Still cheap to swap to Svelte before real UI lands.
+3. **Author SPA framework** — decided: swapped Vue for Svelte 5 (plain Vite SPA, no SSR)
+   before real UI landed. Revisit if SvelteKit's routing/SSR become worth the added runtime.

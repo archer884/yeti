@@ -8,9 +8,9 @@ A public library.
 
 Based on core and db, the api is intended to permit users to add and edit manuscripts for others to view. This functionality works. It currently lacks any way for users to register; the seeded login is `longfellow`. Tokens have real lifetimes now (access 15 min, refresh 30 days), and dev startup prints a 7-day access token for convenience.
 
-### yeti-vue
+### yeti-svelte
 
-A Vue 3 + Vite front end. Replaced an earlier remix front end. Still the default scaffold right now — real UI work has not started.
+A Svelte 5 + Vite front end. Replaced an earlier Vue front end (which replaced a remix front end). Still the default scaffold right now — real UI work has not started.
 
 ### search
 
@@ -38,7 +38,7 @@ cargo run -p search-cli -- initialize      # build the Tantivy index (once / as 
 ```
 
 The host apps already target `localhost:5432` (`.env` + `appsettings.json`), and the SPA dev server
-(`npm run dev` in `yeti-vue/`, needs nvm) is in the api's CORS allowed origins. Apply the schema
+(`npm run dev` in `yeti-svelte/`, needs nvm) is in the api's CORS allowed origins. Apply the schema
 once with `dotnet ef database update --project Yeti.Db -- .env`; the `yeti-db` volume keeps it.
 
 There are two modes that **share the same host ports** (5000/5002/8000/5432), so don't run both at
