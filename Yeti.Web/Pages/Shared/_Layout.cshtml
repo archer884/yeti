@@ -14,6 +14,16 @@
             <a href="/">Home</a>
             <a href="/Search">Search</a>
             <a href="/author/">Authors</a>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <form method="post" asp-page="/Logout" class="inline">
+                    <button type="submit" class="link">Sign out</button>
+                </form>
+            }
+            else
+            {
+                <a href="/Login">Sign in</a>
+            }
         </nav>
     </header>
     <main>

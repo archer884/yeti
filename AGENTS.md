@@ -100,9 +100,10 @@ bimodal "reader" half of the frontend: anonymous visitors and crawlers get fast,
 with no client framework. Entry point `Program.cs`; uses **Lamar** like `Yeti.Api`, **cookie**
 auth (logged-in readers), and a pooled `WriterContext`. Pages live in `Yeti.Web/Pages/` and call
 `Yeti.Core` services/providers directly (no HTTP hop):
-- `Index` (home: recently-added/updated via `RecentService`), `Manuscript` (landing), `Read`
+- `Index` (home: recently-added/updated via `RecentService`, plus a "Your manuscripts" section for
+  logged-in readers via `ManuscriptSummaryProvider.ByWriterId`), `Manuscript` (landing), `Read`
   (a fragment via `FragmentDetailProvider`), `Search` (full-text via `SearchService` → Rust
-  search-api), `Tag`/`Tags` (browse by tag via `TagSearchService`).
+  search-api), `Tag`/`Tags` (browse by tag via `TagSearchService`), `Login`/`Logout` (cookie auth).
 - htmx (`wwwroot/lib/htmx.min.js`) drives interactivity: live search (`hx-get` to a `?handler=`
   partial), and **load-more** pagination on home/search/tag lists (named handlers return shared
   partials `_ManuscriptListPage`/`_SearchResults`; the load-more button swaps its own row via
@@ -112,6 +113,11 @@ auth (logged-in readers), and a pooled `WriterContext`. Pages live in `Yeti.Web/
   in `appsettings.json`.
 - The **author SPA is mounted at `/author`** via `MapFallbackToFile("/author/{*path}", ...)`,
   serving the production build of `yeti-vue` from `wwwroot/author/`.
+- **Reader auth** is cookie-based (the `"Cookie"` scheme): `Login` validates via the existing
+  `LoginService`/`HashProvider` and calls `HttpContext.SignInAsync` with an `"id"` claim (the
+  writer id); `Logout` signs out. Forms use Razor Pages' auto antiforgery. Reader pages stay
+  anonymous — the cookie only gates the home-page personalization hook (a fuller preference model
+  for favorite tags/authors is a future task). Contrast with `Yeti.Api`, which uses JWT bearer.
 
 **`Yeti.Core`** — all business logic.
 - `Service/` — `ManuscriptService`, `FragmentService`, `LoginService`, `RecentService`,

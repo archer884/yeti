@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+
 using Yeti.Core.Model;
 using Yeti.Db;
 
@@ -14,5 +16,15 @@ public class ManuscriptSummaryProvider(WriterContext context)
         }
 
         return new ManuscriptSummary(manuscript);
+    }
+
+    public async Task<List<ManuscriptSummary>> ByWriterId(long writerId)
+    {
+        var manuscripts = await context.Manuscripts
+            .Where(x => x.WriterId == writerId && !x.SoftDelete)
+            .OrderByDescending(x => x.Updated)
+            .ToListAsync();
+
+        return manuscripts.Select(x => new ManuscriptSummary(x)).ToList();
     }
 }

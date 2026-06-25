@@ -86,3 +86,30 @@ button {
     font: inherit;
     cursor: pointer;
 }
+
+button.link {
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+    text-decoration: underline;
+}
+
+form.inline {
+    display: inline;
+}
+
+label {
+    display: inline-block;
+    margin-bottom: 0.25rem;
+}
+
+input[type="text"],
+input[type="password"] {
+    font: inherit;
+    padding: 0.25rem;
+}
+
+.error {
+    color: #c00;
+}
