@@ -32,6 +32,24 @@ services:
     environment:
       CONNECTION_STRING: *cs
 
+  # One-shot: rebuilds the Tantivy index from the DB before search-api starts — the index
+  # always matches the data, and search-api doesn't hold the writer lock yet.
+  reindex:
+    build:
+      context: .
+      dockerfile: search-api/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: *dburl
+      INDEX_DIRECTORY: /index
+    volumes:
+      - yeti-index:/index
+    entrypoint: ["search-cli", "initialize"]
+
   search-api:
     build:
       context: .
@@ -40,6 +58,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      reindex:
+        condition: service_completed_successfully
     environment:
       DATABASE_URL: *dburl
       INDEX_DIRECTORY: /index

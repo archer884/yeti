@@ -65,13 +65,15 @@ search-api `8000` and postgres `5432` are still published for tooling.
 ```sh
 docker compose up -d --build                                                  # build + run everything
 docker compose logs -f api web                                                # tail app logs
-docker compose --profile tools run --rm search-cli initialize                 # rebuild the index
 docker compose down                                                           # stop (named volumes persist)
 ```
 
 `migrate` is a one-shot service that applies EF migrations (incl. seed) before the apps start, and
-reads `CONNECTION_STRING` from the environment. `search-cli` is behind the `tools` profile (it
-shares the `yeti-index` volume; stop `search-api` first since it holds the index writer lock).
+reads `CONNECTION_STRING` from the environment. `reindex` is another one-shot — it runs
+`search-cli initialize` against the `yeti-index` volume *before* `search-api` starts (so the index
+always matches the DB and there's no writer-lock contention); this rebuilds the full Tantivy index
+from Postgres on every `up`. `search-cli` is behind the `tools` profile for ad-hoc queries/manual
+rebuilds (it shares the `yeti-index` volume; stop `search-api` first since it holds the writer lock).
 The `WriterContextFactory` reads `CONNECTION_STRING` from the env first, then falls back to `.env`.
 
 ### .NET (run from repo root)

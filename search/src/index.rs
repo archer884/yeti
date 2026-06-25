@@ -181,6 +181,8 @@ impl IndexBuilder {
         let index = Index::open_or_create(MmapDirectory::open(&self.path)?, self.schema())?;
         let mut writer = index.writer(self.memory)?;
 
+        writer.delete_all_documents()?;
+
         for page in fragments {
             let page = page?;
             self.index_page(&mut writer, &page)?;
@@ -190,7 +192,6 @@ impl IndexBuilder {
     }
 
     fn index_page(&self, writer: &mut IndexWriter, page: &[Fragment]) -> tantivy::Result<()> {
-        writer.delete_all_documents()?;
         for fragment in page {
             writer.add_document(self.schema.document(fragment))?;
         }
