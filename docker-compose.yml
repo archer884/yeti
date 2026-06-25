@@ -43,8 +43,7 @@ services:
     environment:
       DATABASE_URL: *dburl
       INDEX_DIRECTORY: /index
-      ROCKET_ADDRESS: 0.0.0.0
-      ROCKET_PORT: "8000"
+      BIND_ADDRESS: 0.0.0.0:8000
     volumes:
       - yeti-index:/index
     ports:

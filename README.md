@@ -14,7 +14,7 @@ A Vue 3 + Vite front end. Replaced an earlier remix front end. Still the default
 
 ### search
 
-Provides full-text indexing for manuscripts stored on yeti. The `search` library wraps Tantivy; `search-api` is a Rocket HTTP server the api talks to, and `search-cli` rebuilds/queries the index.
+Provides full-text indexing for manuscripts stored on yeti. The `search` library wraps Tantivy; `search-api` is an axum HTTP server the api talks to, and `search-cli` rebuilds/queries the index.
 
 ### yeti-pw
 

@@ -1,16 +1,17 @@
 use std::{
     fs, io,
     path::{Path, PathBuf},
+    time::{Duration, Instant},
 };
 
 use diesel::{connection::LoadConnection, pg::Pg};
 use tantivy::{
+    Index, IndexReader, IndexWriter, TantivyDocument, Term,
     collector::TopDocs,
     directory::MmapDirectory,
     doc,
     query::QueryParser,
     schema::{self, Field, Schema, TextFieldIndexing, TextOptions, Value},
-    Index, IndexReader, IndexWriter, TantivyDocument, Term,
 };
 
 use crate::{
@@ -77,21 +78,54 @@ impl FragmentIndex {
         Ok(FragmentWriter {
             writer,
             schema: self.schema.clone(),
-            update_count: 0,
+            gate: WriterGate::new(),
         })
+    }
+}
+
+#[derive(Debug)]
+struct WriterGate {
+    time: Instant,
+    count: usize,
+}
+
+impl WriterGate {
+    fn new() -> Self {
+        Self {
+            time: Instant::now(),
+            count: 0,
+        }
+    }
+
+    fn increment(&mut self) {
+        self.count += 1;
+    }
+
+    fn reset(&mut self) {
+        self.count = 0;
+        self.time = Instant::now();
+    }
+
+    fn should_commit(&self) -> bool {
+        const MIN_WRITE_COUNT: usize = 10;
+        const MIN_ELAPSED_TIME: Duration = Duration::from_secs(45);
+
+        self.count > 0 && {
+            self.count >= MIN_WRITE_COUNT || self.time.elapsed() >= MIN_ELAPSED_TIME
+        }
     }
 }
 
 pub struct FragmentWriter {
     writer: IndexWriter,
     schema: FragmentSchema,
-    update_count: u8,
+    gate: WriterGate,
 }
 
 impl FragmentWriter {
     pub fn update(&mut self, fragment: &Fragment) -> crate::Result<()> {
         self.writer.add_document(self.schema.document(fragment))?;
-        self.update_count += 1;
+        self.gate.increment();
         self.commit()?;
         Ok(())
     }
@@ -99,14 +133,15 @@ impl FragmentWriter {
     pub fn remove(&mut self, id: i64) -> crate::Result<()> {
         let term = Term::from_field_i64(self.schema.id, id);
         self.writer.delete_term(term);
-        self.writer.commit()?;
+        self.gate.increment();
+        self.commit()?;
         Ok(())
     }
 
     pub fn commit(&mut self) -> crate::Result<()> {
-        if self.update_count > 9 {
+        if self.gate.should_commit() {
             self.writer.commit()?;
-            self.update_count = 0;
+            self.gate.reset();
         }
 
         Ok(())
