@@ -71,6 +71,7 @@ for in the original vision but **there is no view/read telemetry to derive it fr
 
 ## Search & indexing
 
+- Seems like search has trouble elevating phrases over single words. There's probably something wrong with the way indexing is done.
 - **Excerpts/highlighting** — `SearchService` truncates `Content` to 280 chars server-side with no
   hit highlighting. Tantivy can produce snippets; wire them through for matched-term context.
 - **Index drift / reconciliation** — `IndexingService` fires updates as best-effort fire-and-forget
