@@ -1,0 +1,17 @@
+@page "{id:long}"
+@model ReadModel
+@{
+    ViewData["Title"] = Model.Fragment?.Heading ?? "Fragment";
+}
+
+@if (Model.Fragment?.Heading is string heading)
+{
+    <h1>@heading</h1>
+}
+
+<article>@Model.Fragment?.Content</article>
+
+@if (Model.Fragment is not null)
+{
+    <p><a href="/Manuscript/@Model.Fragment.ManuscriptId">Back to manuscript</a></p>
+}

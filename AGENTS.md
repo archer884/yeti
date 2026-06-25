@@ -11,11 +11,12 @@ own status notes.
 
 ## Polyglot monorepo
 
-The project is a .NET backend, a Rust search service, and a Vue frontend in one repo.
+The project is a .NET backend + reader site, a Rust search service, and a Vue author SPA in one repo.
 
 | Path | Lang | Role |
 |------|------|------|
-| `Yeti.Api/` | C# (.NET 10) | ASP.NET Core Web API — the backend |
+| `Yeti.Api/` | C# (.NET 10) | ASP.NET Core Web API — the JSON backend (JWT bearer) |
+| `Yeti.Web/` | C# (.NET 10) | Server-rendered reader site (Razor Pages + htmx, cookie auth) |
 | `Yeti.Core/` | C# (.NET 10) | Domain logic: services, providers, DTOs, config |
 | `Yeti.Db/` | C# (.NET 10) | EF Core data layer (PostgreSQL) |
 | `Yeti.Test/` | C# (.NET 10) | xUnit tests |
@@ -24,7 +25,7 @@ The project is a .NET backend, a Rust search service, and a Vue frontend in one 
 | `search-cli/` | Rust | CLI to rebuild/query the index |
 | `yeti-pw/` | Rust | Utility to argon2-hash a password |
 | `yeti-seed/` | Rust | CLI to bulk-import Project Gutenberg texts via the API |
-| `yeti-vue/` | TS/Vue 3 | Frontend (currently just the Vite scaffold) |
+| `yeti-vue/` | TS/Vue 3 | Author SPA, built to `/author/` (Vite, base `'/author/'`) |
 
 ## Prerequisites & tooling
 
@@ -44,7 +45,8 @@ The project is a .NET backend, a Rust search service, and a Vue frontend in one 
 ```sh
 dotnet build Yeti.sln              # build the whole solution
 dotnet test Yeti.sln               # run xUnit tests
-dotnet run --project Yeti.Api      # run the API (dev: prints a 7-day token on startup)
+dotnet run --project Yeti.Api      # run the API, port 5000 (dev: prints a 7-day token on startup)
+dotnet run --project Yeti.Web      # run the reader site, port 5002
 dotnet watch run --project Yeti.sln  # hot-reload build (matches .vscode/tasks.json)
 ```
 
@@ -76,8 +78,8 @@ npm run format      # prettier
 
 ### .NET layering
 
-`Yeti.Db` (no internal deps) -> `Yeti.Core` (depends on Db) -> `Yeti.Api` (depends on Core + Db).
-`Yeti.Test` references `Yeti.Core` only.
+`Yeti.Db` (no internal deps) -> `Yeti.Core` (depends on Db) -> `Yeti.Api`/`Yeti.Web` (each depends
+on Core + Db). `Yeti.Test` references `Yeti.Core` only.
 
 **`Yeti.Api`** — entry point `Program.cs`. Uses **Lamar** as the DI container
 (`ServiceRegistry`, registered via `ConfigureServices`). JWT bearer auth; Swagger only in
@@ -93,12 +95,24 @@ code sets `ASPNETCORE_ENVIRONMENT` from it). `WriterContext` is a pooled Npgsql 
 - Config helpers in `Yeti.Api/Config/`: `ConfigurationExtensions` (auth + Swagger setup),
   `TokenOptions`.
 
+**`Yeti.Web`** — the **server-rendered reader site** (Razor Pages + htmx, port 5002). This is the
+bimodal "reader" half of the frontend: anonymous visitors and crawlers get fast, SEO-friendly HTML
+with no client framework. Entry point `Program.cs`; uses **Lamar** like `Yeti.Api`, **cookie**
+auth (logged-in readers), and a pooled `WriterContext`. Pages live in `Yeti.Web/Pages/` and call
+`Yeti.Core` services/providers directly (no HTTP hop):
+- `Index` (home: recently-added/updated via `RecentService`), `Manuscript` (landing), `Read`
+  (a fragment via `FragmentDetailProvider`).
+- htmx (`wwwroot/lib/htmx.min.js`) drives interactivity — page handlers return Razor partials when
+  the `HX-Request` header is present.
+- The **author SPA is mounted at `/author`** via `MapFallbackToFile("/author/{*path}", ...)`,
+  serving the production build of `yeti-vue` from `wwwroot/author/`.
+
 **`Yeti.Core`** — all business logic.
 - `Service/` — `ManuscriptService`, `FragmentService`, `LoginService`, `RecentService`,
   `SearchService`, `TagService`, `TagSearchService`, `IndexingService` (+ `IIndexingService`),
   `IndexClient` (HttpClient to the Rust search-api), and the static `FragmentExtensions`.
-- `Provider/` — read-side helpers (`ManuscriptSummaryProvider`, `FragmentSummaryProvider`) and
-  `HashProvider` (Argon2id via the `Geralt` package).
+- `Provider/` — read-side helpers (`ManuscriptSummaryProvider`, `FragmentSummaryProvider`,
+  `FragmentDetailProvider`) and `HashProvider` (Argon2id via the `Geralt` package).
 - `Model/` — request/response DTOs, almost all `record`s (`CreateManuscript`,
   `UpdateFragment`, `ManuscriptSummary`, `Snapshot`, `LoginRequest`, `ModifyTag`, etc.).
 - `Config/` — options-pattern plumbing: `IConfigurable` + a generic `Configure<T>` that binds
@@ -131,11 +145,13 @@ every 90 s. Uses `mimalloc` as the global allocator. The C# side talks to this s
 `IndexClient`; `IndexingService` fires index updates as best-effort, fire-and-forget `Task.Run`s
 (failures are logged, not thrown).
 
-### Vue frontend
+### Vue frontend (author SPA)
 
-Vue 3 + Vite 6 + Pinia + TypeScript. `@` is aliased to `./src`. Largely the default scaffold
-right now — real UI work has not started (it replaced an earlier `yeti-remix` frontend; see
-git history).
+Vue 3 + Vite 6 + Pinia + TypeScript. `@` is aliased to `./src`. Vite `base` is `'/author/'` so the
+production build is served under `/author` by `Yeti.Web`. Largely the default scaffold right now —
+real UI work has not started (it replaced an earlier `yeti-remix` frontend; see git history). It
+consumes the `Yeti.Api` JSON endpoints with JWT bearer, in contrast to `Yeti.Web`'s server-rendered
+reader pages — this is the intended **bimodal** split (SPA for authors, SSR for readers).
 
 ## Domain model & key concepts
 
@@ -168,8 +184,9 @@ git history).
 - `node`/`npm` are **not on PATH** — source nvm before any `yeti-vue` command.
 - `.env` is gitignored. It must define `CONNECTION_STRING` (for EF migrations via the C#
   design factory), `DATABASE_URL` (for the Rust side), and `INDEX_DIRECTORY`.
-- `Yeti.Api/appsettings.json` is committed and contains the dev DB password and JWT key. The
-  dev API prints a long-lived token to stdout on startup — handy for local scripting.
+- `Yeti.Api/appsettings.json` and `Yeti.Web/appsettings.json` are committed and contain the dev DB
+  password (API also holds the JWT key). The dev API prints a long-lived token to stdout on
+  startup — handy for local scripting.
 - The seed user is `longfellow`. `TokenService` sets real lifetimes (access 15 min, refresh
   30 days); dev startup prints a 7-day access token for convenience.
 - Read/search endpoints are anonymous; mutating endpoints require a valid JWT whose `id` claim

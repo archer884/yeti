@@ -1,0 +1,21 @@
+@page "{id:long}"
+@model ManuscriptModel
+@{
+    ViewData["Title"] = Model.Manuscript?.Title ?? "Manuscript";
+}
+
+<h1>@Model.Manuscript?.Title</h1>
+@if (Model.Manuscript?.Blurb is string blurb)
+{
+    <p>@blurb</p>
+}
+
+<ul>
+    @foreach (var fragment in Model.Fragments)
+    {
+        <li>
+            <a href="/Read/@fragment.Id">@(fragment.Heading ?? $"Fragment {fragment.Id}")</a>
+            <span>(@fragment.Length characters)</span>
+        </li>
+    }
+</ul>

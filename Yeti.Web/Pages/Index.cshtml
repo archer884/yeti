@@ -1,0 +1,27 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home";
+}
+
+<h1>Recently added</h1>
+<ul>
+    @foreach (var manuscript in Model.New)
+    {
+        <li>
+            <a href="/Manuscript/@manuscript.Id">@manuscript.Title</a>
+            @if (manuscript.Blurb is not null)
+            {
+                <span> — @manuscript.Blurb</span>
+            }
+        </li>
+    }
+</ul>
+
+<h1>Recently updated</h1>
+<ul>
+    @foreach (var manuscript in Model.Updated)
+    {
+        <li><a href="/Manuscript/@manuscript.Id">@manuscript.Title</a></li>
+    }
+</ul>

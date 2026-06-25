@@ -7,6 +7,8 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Mounted under /author in Yeti.Web (see Yeti.Web/Program.cs MapFallbackToFile).
+  base: '/author/',
   plugins: [
     vue(),
     vueJsx(),
