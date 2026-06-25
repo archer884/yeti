@@ -10,7 +10,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/Yeti.Api/bin/Debug/net9.0/Yeti.Api.dll",
+            "program": "${workspaceFolder}/Yeti.Api/bin/Debug/net10.0/Yeti.Api.dll",
             "args": [],
             "cwd": "${workspaceFolder}/Yeti.Api",
             "stopAtEntry": false,

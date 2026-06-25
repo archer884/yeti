@@ -14,9 +14,9 @@ public class HashProvider(IOptions<HashProviderOptions> options)
     public string ComputeHash(string password)
     {
         var p = Encoding.UTF8.GetBytes(password);
-        Span<byte> hash = new();
+        Span<char> hash = stackalloc char[Argon2id.HashSize];
         Argon2id.ComputeHash(hash, p, Iterations, Memory);
-        return Encoding.UTF8.GetString(hash).Trim();
+        return new string(hash).Trim();
     }
 
     // This is a service. We're not going to pretend that its members are always going to be static.
@@ -24,8 +24,7 @@ public class HashProvider(IOptions<HashProviderOptions> options)
     public bool VerifyHash(string hash, string password)
 #pragma warning restore CA1822 // Mark members as static
     {
-        var h = Encoding.UTF8.GetBytes(hash);
         var p = Encoding.UTF8.GetBytes(password);
-        return Argon2id.VerifyHash(h, p);
+        return Argon2id.VerifyHash(hash, p);
     }
 }

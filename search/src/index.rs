@@ -10,7 +10,7 @@ use tantivy::{
     doc,
     query::QueryParser,
     schema::{self, Field, Schema, TextFieldIndexing, TextOptions, Value},
-    TantivyDocument, Index, IndexReader, IndexWriter, Term,
+    Index, IndexReader, IndexWriter, TantivyDocument, Term,
 };
 
 use crate::{
@@ -51,7 +51,9 @@ impl FragmentIndex {
         let time = chronograf::start();
 
         let query = self.parser.parse_query(query)?;
-        let collector = TopDocs::with_limit(SEARCH_PAGE_SIZE).and_offset(page * SEARCH_PAGE_SIZE);
+        let collector = TopDocs::with_limit(SEARCH_PAGE_SIZE)
+            .and_offset(page * SEARCH_PAGE_SIZE)
+            .order_by_score();
         let searcher = self.reader.searcher();
         let results = searcher.search(&query, &collector)?;
 
@@ -210,13 +212,6 @@ trait FieldAccess {
 
 impl FieldAccess for Field {
     fn get_i64(self, document: &TantivyDocument) -> i64 {
-        unsafe {
-            document
-                .field_values()
-                .get_unchecked(0)
-                .value()
-                .as_i64()
-                .unwrap()
-        }
+        document.get_first(self).unwrap().as_i64().unwrap()
     }
 }

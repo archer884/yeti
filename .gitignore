@@ -1,7 +1,17 @@
-.DS_Store
-.env
-/.yeti-index
-/target
-/yeti-index
+# build products
 bin/
 obj/
+target/
+
+# sensitive configuration
+.env
+
+# tooling support
+.vscode/
+
+# test products
+.yeti-index/
+yeti-index/
+
+# os bs
+.DS_Store

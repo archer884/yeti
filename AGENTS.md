@@ -7,7 +7,7 @@ Reference for AI agents (and humans) working in the Yeti codebase.
 Yeti is an in-progress prototype for an online fiction/publishing platform ("a public
 library"). Writers create **manuscripts**, each composed of ordered **fragments** (chapters/
 sections). Manuscripts can be tagged and full-text-searched. See `README.md` for the author's
-own (slightly stale) status notes.
+own status notes.
 
 ## Polyglot monorepo
 
@@ -15,10 +15,10 @@ The project is a .NET backend, a Rust search service, and a Vue frontend in one 
 
 | Path | Lang | Role |
 |------|------|------|
-| `Yeti.Api/` | C# (.NET 9) | ASP.NET Core Web API — the backend |
-| `Yeti.Core/` | C# (.NET 9) | Domain logic: services, providers, DTOs, config |
-| `Yeti.Db/` | C# (.NET 9) | EF Core data layer (PostgreSQL) |
-| `Yeti.Test/` | C# (.NET 9) | xUnit tests |
+| `Yeti.Api/` | C# (.NET 10) | ASP.NET Core Web API — the backend |
+| `Yeti.Core/` | C# (.NET 10) | Domain logic: services, providers, DTOs, config |
+| `Yeti.Db/` | C# (.NET 10) | EF Core data layer (PostgreSQL) |
+| `Yeti.Test/` | C# (.NET 10) | xUnit tests |
 | `search/` | Rust (2024) | Tantivy full-text index library |
 | `search-api/` | Rust | Rocket HTTP server wrapping `search/` |
 | `search-cli/` | Rust | CLI to rebuild/query the index |
@@ -28,7 +28,7 @@ The project is a .NET backend, a Rust search service, and a Vue frontend in one 
 
 ## Prerequisites & tooling
 
-- `dotnet` SDK (.NET 9 / SDK 10.x works) — present.
+- `dotnet` SDK (.NET 10) — present.
 - `cargo` (Rust toolchain) — present. Repo has `.cargo/config.toml` enabling
   `-Ctarget-cpu=native` and `lld` linker; release profile uses `lto`, single codegen unit,
   `panic=abort`.
@@ -103,6 +103,7 @@ code sets `ASPNETCORE_ENVIRONMENT` from it). `WriterContext` is a pooled Npgsql 
   `UpdateFragment`, `ManuscriptSummary`, `Snapshot`, `LoginRequest`, `ModifyTag`, etc.).
 - `Config/` — options-pattern plumbing: `IConfigurable` + a generic `Configure<T>` that binds
   options from `IConfiguration` sections (see `ConfigSections.cs` for `Search`/`PasswordHashing`).
+  Register a configurable via `ServiceCollectionExtensions.AddConfigurable<T>()`.
 - `Time.cs` — a testable clock with `Set`/`Unset` for forcing the current time in tests.
 
 **`Yeti.Db`** — `WriterContext` (`DbContext`) with DbSets: `Writers`, `Logins`, `Manuscripts`,
@@ -169,7 +170,7 @@ git history).
   design factory), `DATABASE_URL` (for the Rust side), and `INDEX_DIRECTORY`.
 - `Yeti.Api/appsettings.json` is committed and contains the dev DB password and JWT key. The
   dev API prints a long-lived token to stdout on startup — handy for local scripting.
-- The README's "login with test/test" / "tokens never expire" notes are stale; the seed user is
-  `longfellow` and `TokenService` does set lifetimes. Trust the code over the README.
+- The seed user is `longfellow`. `TokenService` sets real lifetimes (access 15 min, refresh
+  30 days); dev startup prints a 7-day access token for convenience.
 - Read/search endpoints are anonymous; mutating endpoints require a valid JWT whose `id` claim
   matches the owning `WriterId` of the target entity (services filter by `writerId`).
