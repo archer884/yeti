@@ -79,9 +79,9 @@ void ConfigureServices(ServiceRegistry services)
     services.AddDbContextPool<WriterContext>(
         config => config.UseNpgsql(configuration.GetConnectionString("WriterContext")));
 
-    services.ConfigureOptions<Configure<HashProviderOptions>>();
-    services.ConfigureOptions<Configure<IndexOptions>>();
-    services.ConfigureOptions<Configure<TokenOptions>>();
+    services.AddConfigurable<HashProviderOptions>();
+    services.AddConfigurable<IndexOptions>();
+    services.AddConfigurable<TokenOptions>();
 
     services.AddHttpClient<IndexClient>((config, client) =>
     {
