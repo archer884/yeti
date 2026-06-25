@@ -12,7 +12,7 @@ using Yeti.Db;
 namespace Yeti.Db.Migrations
 {
     [DbContext(typeof(WriterContext))]
-    [Migration("20240313025251_InitialCreate")]
+    [Migration("20260625020507_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -20,7 +20,7 @@ namespace Yeti.Db.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.2")
+                .HasAnnotation("ProductVersion", "10.0.9")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -90,22 +90,22 @@ namespace Yeti.Db.Migrations
                         {
                             Id = 1L,
                             Content = "By the shore of Gitche Gumbee,\nBy the shining Big-Sea-Water,\nAt the doorway of his wigwam,\nIn the pleasant Summer morning,\nHiawatha stood and waited.",
-                            Created = new DateTimeOffset(new DateTime(2024, 3, 13, 2, 52, 50, 853, DateTimeKind.Unspecified).AddTicks(3130), new TimeSpan(0, 0, 0, 0, 0)),
+                            Created = new DateTimeOffset(new DateTime(2024, 3, 13, 2, 52, 51, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             ManuscriptId = 1L,
                             SoftDelete = true,
                             SortBy = 1.0,
-                            Updated = new DateTimeOffset(new DateTime(2024, 3, 13, 2, 52, 50, 853, DateTimeKind.Unspecified).AddTicks(3130), new TimeSpan(0, 0, 0, 0, 0)),
+                            Updated = new DateTimeOffset(new DateTime(2024, 3, 13, 2, 52, 51, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             WriterId = 1L
                         },
                         new
                         {
                             Id = 2L,
                             Content = "By the shore of Gitche Gumee,\nBy the shining Big-Sea-Water,\nAt the doorway of his wigwam,\nIn the pleasant Summer morning,\nHiawatha stood and waited.",
-                            Created = new DateTimeOffset(new DateTime(2024, 3, 13, 2, 52, 50, 853, DateTimeKind.Unspecified).AddTicks(3140), new TimeSpan(0, 0, 0, 0, 0)),
+                            Created = new DateTimeOffset(new DateTime(2024, 3, 13, 2, 52, 51, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             ManuscriptId = 1L,
                             SoftDelete = false,
                             SortBy = 1.0,
-                            Updated = new DateTimeOffset(new DateTime(2024, 3, 13, 2, 52, 50, 853, DateTimeKind.Unspecified).AddTicks(3140), new TimeSpan(0, 0, 0, 0, 0)),
+                            Updated = new DateTimeOffset(new DateTime(2024, 3, 13, 2, 52, 51, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             WriterId = 1L
                         });
                 });
@@ -182,10 +182,10 @@ namespace Yeti.Db.Migrations
                         {
                             Id = 1L,
                             Blurb = "An old poem",
-                            Created = new DateTimeOffset(new DateTime(2024, 3, 13, 2, 52, 50, 853, DateTimeKind.Unspecified).AddTicks(3130), new TimeSpan(0, 0, 0, 0, 0)),
+                            Created = new DateTimeOffset(new DateTime(2024, 3, 13, 2, 52, 51, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             SoftDelete = false,
                             Title = "The Song of Hiawatha",
-                            Updated = new DateTimeOffset(new DateTime(2024, 3, 13, 2, 52, 50, 853, DateTimeKind.Unspecified).AddTicks(3130), new TimeSpan(0, 0, 0, 0, 0)),
+                            Updated = new DateTimeOffset(new DateTime(2024, 3, 13, 2, 52, 51, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             WriterId = 1L
                         });
                 });

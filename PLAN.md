@@ -15,8 +15,8 @@ The bimodal frontend is built and wired:
 - **Backend** — `Yeti.Api` (JWT) + `Yeti.Core` + `Yeti.Db` + Rust `search-api` all functional.
   CORS lets the SPA and reader site call the API cross-origin.
 
-Everything builds clean (.NET 10) and the 3 tests pass. The dev DB is remote; reader pages are
-proven to their handler/DB boundary.
+Everything builds clean (.NET 10) and the 3 tests pass. The dev DB runs locally via
+`docker compose up -d` (postgres 17, seed: the `longfellow` writer + a Hiawatha manuscript).
 
 ## Near-term: the author SPA
 
@@ -86,9 +86,15 @@ for in the original vision but **there is no view/read telemetry to derive it fr
   more", so the last page can render an extra button that yields nothing. Inexpensive to live
   with; fix only if it bothers.
 - **Pagination param** — reader pages use `?p=N`; ensure consistent across any new pages.
-- **Deployment topology** — currently SPA/reader-site/API are cross-origin (CORS). A reverse
-  proxy putting `/author/*`, reader routes, and `/api/*` on one origin would remove the CORS
-  dependency in production. Optional.
+- **Deployment topology** — the container story is in place: Dockerfiles for `Yeti.Api`, `Yeti.Web`
+  (multi-stage: builds the `yeti-vue` SPA, then the .NET app), the Rust `search-api`, and a
+  `Yeti.Db` one-shot migration runner; `docker-compose.yml` brings up the whole stack (db →
+  migrate → search-api → api/web) and `docker compose up -d --build` produces a working site.
+  Remaining hardening: switch the API/web from `Development` + committed secrets to `Production`
+  with secret management; a reverse proxy putting `/author/*`, reader routes, and `/api/*` on one
+  origin (would also drop the CORS dependency); and rebuilding the Rust image with full LTO for
+  the production binary. Note the API is published on host port `5050` since macOS AirPlay holds
+  `5000`.
 - **Test coverage** — only `FragmentExtensions.NextSortBy` is tested (3 tests). The reader site
   (page models, auth flow) and core services have no coverage.
 

@@ -1,0 +1,103 @@
+name: yeti
+
+x-connection-string: &cs "Host=db;Port=5432;Database=yeti;Username=yetiuser;Password=yetipassword;"
+x-database-url: &dburl "postgres://yetiuser:yetipassword@db:5432/yeti"
+
+services:
+  db:
+    image: postgres:17
+    container_name: yeti-db
+    environment:
+      POSTGRES_USER: yetiuser
+      POSTGRES_PASSWORD: yetipassword
+      POSTGRES_DB: yeti
+    ports:
+      - "5432:5432"
+    volumes:
+      - yeti-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yetiuser -d yeti"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  # One-shot: applies EF migrations (schema + seed) before the apps start.
+  migrate:
+    build:
+      context: .
+      dockerfile: Yeti.Db/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      CONNECTION_STRING: *cs
+
+  search-api:
+    build:
+      context: .
+      dockerfile: search-api/Dockerfile
+    container_name: yeti-search
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: *dburl
+      INDEX_DIRECTORY: /index
+      ROCKET_ADDRESS: 0.0.0.0
+      ROCKET_PORT: "8000"
+    volumes:
+      - yeti-index:/index
+    ports:
+      - "8000:8000"
+
+  api:
+    build:
+      context: .
+      dockerfile: Yeti.Api/Dockerfile
+    container_name: yeti-api
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      search-api:
+        condition: service_started
+    environment:
+      ConnectionStrings__WriterContext: *cs
+      Search__Url: "http://search-api:8000"
+    ports:
+      - "5050:8080"   # 5000 is grabbed by macOS AirPlay Receiver
+
+  web:
+    build:
+      context: .
+      dockerfile: Yeti.Web/Dockerfile
+    container_name: yeti-web
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      search-api:
+        condition: service_started
+    environment:
+      ConnectionStrings__WriterContext: *cs
+      Search__Url: "http://search-api:8000"
+    ports:
+      - "5002:8080"
+
+  # Opt-in tooling (one-off index rebuilds): docker compose --profile tools run --rm search-cli initialize
+  search-cli:
+    build:
+      context: .
+      dockerfile: search-api/Dockerfile
+    profiles: ["tools"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: *dburl
+      INDEX_DIRECTORY: /index
+    volumes:
+      - yeti-index:/index
+    entrypoint: ["search-cli"]
+
+volumes:
+  yeti-db:
+  yeti-index:

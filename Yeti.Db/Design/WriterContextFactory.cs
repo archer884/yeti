@@ -21,19 +21,26 @@ public partial class WriterContextFactory : IDesignTimeDbContextFactory<WriterCo
 
     static string? GetConnectionString(string[] args)
     {
-        // We're going to assume you gave us a path to a .env file.
-        // If not, this is going to be a really fast migration.
-        var path = args.FirstOrDefault(x => File.Exists(x)) ?? ".env";
-        var content = File.ReadAllText(path);
+        // An explicit environment variable wins (handy in containers); otherwise fall back to a
+        // .env file passed as an argument or present in the working directory.
+        if (Environment.GetEnvironmentVariable("CONNECTION_STRING") is { Length: > 0 } env)
+        {
+            return env.Trim('"');
+        }
 
-        var m = ConnectionString().Match(content);
+        var path = args.FirstOrDefault(x => File.Exists(x));
+        if (path is null && File.Exists(".env"))
+        {
+            path = ".env";
+        }
 
-        if (!m.Success)
+        if (path is null)
         {
             return null;
         }
 
-        return ConnectionString().Match(content).Groups[1].Value;
+        var match = ConnectionString().Match(File.ReadAllText(path));
+        return match.Success ? match.Groups[1].Value.Trim().Trim('"') : null;
     }
 
     [GeneratedRegex("CONNECTION_STRING=(.+)")]

@@ -155,15 +155,15 @@ namespace Yeti.Db.Migrations
             migrationBuilder.InsertData(
                 table: "Manuscripts",
                 columns: new[] { "Id", "Blurb", "Created", "SoftDelete", "Title", "Updated", "WriterId" },
-                values: new object[] { 1L, "An old poem", new DateTimeOffset(new DateTime(2024, 3, 13, 2, 52, 50, 853, DateTimeKind.Unspecified).AddTicks(3130), new TimeSpan(0, 0, 0, 0, 0)), false, "The Song of Hiawatha", new DateTimeOffset(new DateTime(2024, 3, 13, 2, 52, 50, 853, DateTimeKind.Unspecified).AddTicks(3130), new TimeSpan(0, 0, 0, 0, 0)), 1L });
+                values: new object[] { 1L, "An old poem", new DateTimeOffset(new DateTime(2024, 3, 13, 2, 52, 51, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), false, "The Song of Hiawatha", new DateTimeOffset(new DateTime(2024, 3, 13, 2, 52, 51, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), 1L });
 
             migrationBuilder.InsertData(
                 table: "Fragments",
                 columns: new[] { "Id", "Content", "Created", "Heading", "ManuscriptId", "SoftDelete", "SortBy", "Updated", "WriterId" },
                 values: new object[,]
                 {
-                    { 1L, "By the shore of Gitche Gumbee,\nBy the shining Big-Sea-Water,\nAt the doorway of his wigwam,\nIn the pleasant Summer morning,\nHiawatha stood and waited.", new DateTimeOffset(new DateTime(2024, 3, 13, 2, 52, 50, 853, DateTimeKind.Unspecified).AddTicks(3130), new TimeSpan(0, 0, 0, 0, 0)), null, 1L, true, 1.0, new DateTimeOffset(new DateTime(2024, 3, 13, 2, 52, 50, 853, DateTimeKind.Unspecified).AddTicks(3130), new TimeSpan(0, 0, 0, 0, 0)), 1L },
-                    { 2L, "By the shore of Gitche Gumee,\nBy the shining Big-Sea-Water,\nAt the doorway of his wigwam,\nIn the pleasant Summer morning,\nHiawatha stood and waited.", new DateTimeOffset(new DateTime(2024, 3, 13, 2, 52, 50, 853, DateTimeKind.Unspecified).AddTicks(3140), new TimeSpan(0, 0, 0, 0, 0)), null, 1L, false, 1.0, new DateTimeOffset(new DateTime(2024, 3, 13, 2, 52, 50, 853, DateTimeKind.Unspecified).AddTicks(3140), new TimeSpan(0, 0, 0, 0, 0)), 1L }
+                    { 1L, "By the shore of Gitche Gumbee,\nBy the shining Big-Sea-Water,\nAt the doorway of his wigwam,\nIn the pleasant Summer morning,\nHiawatha stood and waited.", new DateTimeOffset(new DateTime(2024, 3, 13, 2, 52, 51, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, 1L, true, 1.0, new DateTimeOffset(new DateTime(2024, 3, 13, 2, 52, 51, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), 1L },
+                    { 2L, "By the shore of Gitche Gumee,\nBy the shining Big-Sea-Water,\nAt the doorway of his wigwam,\nIn the pleasant Summer morning,\nHiawatha stood and waited.", new DateTimeOffset(new DateTime(2024, 3, 13, 2, 52, 51, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, 1L, false, 1.0, new DateTimeOffset(new DateTime(2024, 3, 13, 2, 52, 51, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), 1L }
                 });
 
             migrationBuilder.CreateIndex(

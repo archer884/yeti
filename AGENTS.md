@@ -35,10 +35,42 @@ The project is a .NET backend + reader site, a Rust search service, and a Vue au
   `panic=abort`.
 - `node`/`npm` are **installed via nvm** and NOT on the default PATH. Prefix shell commands with
   `source ~/.nvm/nvm.sh &&` (node v24) when running anything in `yeti-vue/`.
-- PostgreSQL. The dev DB is remote; connection strings live in `.env` (gitignored) and in
-  `Yeti.Api/appsettings.json` (committed, contains dev secrets).
+- PostgreSQL. The dev DB runs in Docker via `docker compose up -d` (see `docker-compose.yml` —
+  `postgres:17`, user `yetiuser`, db `yeti`, host port 5432; data in the `yeti-db` named volume).
+  Connection strings live in `.env` (gitignored, for the Rust side + EF design-time factory) and in
+  `Yeti.Api/appsettings.json` / `Yeti.Web/appsettings.json` (committed, runtime — both point at
+  `localhost:5432`).
 
 ## Commands
+
+### Database (Docker, run from repo root)
+
+```sh
+docker compose up -d                                                          # start postgres
+docker exec yeti-db psql -U yetiuser -d yeti -c "SELECT \"Id\",\"Username\" FROM \"Writers\";"  # quick query
+dotnet ef database update --project Yeti.Db -- .env                           # apply migrations
+cargo run -p search-cli -- initialize                                         # rebuild the Tantivy index
+```
+
+### Full stack (Docker Compose)
+
+Each service has a Dockerfile (`Yeti.Api/`, `Yeti.Web/`, `search-api/`, `Yeti.Db/`) and they're
+wired together in `docker-compose.yml`. Services address each other by service name over the
+compose network (e.g. the apps' `Search__Url` is `http://search-api:8000`, and the DB host is
+`db`). Host ports: reader site `5002`, API `5050` (5000 is taken by macOS AirPlay Receiver),
+search-api `8000`, postgres `5432`.
+
+```sh
+docker compose up -d --build                                                  # build + run everything
+docker compose logs -f api web                                                # tail app logs
+docker compose --profile tools run --rm search-cli initialize                 # rebuild the index
+docker compose down                                                           # stop (named volumes persist)
+```
+
+`migrate` is a one-shot service that applies EF migrations (incl. seed) before the apps start, and
+reads `CONNECTION_STRING` from the environment. `search-cli` is behind the `tools` profile (it
+shares the `yeti-index` volume; stop `search-api` first since it holds the index writer lock).
+The `WriterContextFactory` reads `CONNECTION_STRING` from the env first, then falls back to `.env`.
 
 ### .NET (run from repo root)
 
@@ -144,9 +176,12 @@ auth (logged-in readers), and a pooled `WriterContext`. Pages live in `Yeti.Web/
 - `Remove<T>` performs a **soft delete** (sets `SoftDelete = true`) for `ISoftDeletable`
   entities instead of hard-deleting.
 `WriterContext.OnModelCreating` configures relationships, indexes, and `HasData` seed data
-(the `longfellow` demo writer/login/manuscript/fragments). EF migrations live in
+(the `longfellow` demo writer/login/manuscript/fragments). The seed uses fixed timestamps so the
+model is deterministic (EF Core 10 rejects dynamic `HasData` values). EF migrations live in
 `Yeti.Db/Migrations/`; design-time factory `WriterContextFactory` reads `CONNECTION_STRING`
-from `.env` (pass the `.env` path or run from repo root).
+from `.env` and strips surrounding quotes. Apply/update with
+`dotnet ef database update --project Yeti.Db -- <path-to-.env>` (pass the repo-root `.env`
+explicitly, since the factory resolves it relative to the project dir).
 
 ### Rust search
 
@@ -202,7 +237,8 @@ pages — this is the intended **bimodal** split (SPA for authors, SSR for reade
 
 - `node`/`npm` are **not on PATH** — source nvm before any `yeti-vue` command.
 - `.env` is gitignored. It must define `CONNECTION_STRING` (for EF migrations via the C#
-  design factory), `DATABASE_URL` (for the Rust side), and `INDEX_DIRECTORY`.
+  design factory), `DATABASE_URL` (for the Rust side), and `INDEX_DIRECTORY`. Credentials are
+  `yetiuser`/`yetipassword` (matching `docker-compose.yml`), host `localhost:5432`.
 - `Yeti.Api/appsettings.json` and `Yeti.Web/appsettings.json` are committed and contain the dev DB
   password (API also holds the JWT key). The dev API prints a long-lived token to stdout on
   startup — handy for local scripting.
