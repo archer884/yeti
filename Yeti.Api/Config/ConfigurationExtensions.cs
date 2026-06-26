@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -26,6 +27,7 @@ public static class ConfigurationExtensions
 
                 options.TokenValidationParameters = new()
                 {
+                    NameClaimType = ClaimTypes.NameIdentifier,
                     ValidateAudience = false,
                     // ValidAudience = configuration["Jwt:Audience"],
                     ValidateIssuer = true,

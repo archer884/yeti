@@ -1,0 +1,115 @@
+:root {
+    color-scheme: light dark;
+    font-family: system-ui, sans-serif;
+    line-height: 1.6;
+    max-width: 70ch;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+body {
+    margin: 0;
+}
+
+header {
+    display: flex;
+    align-items: baseline;
+    gap: 1.5rem;
+    border-bottom: 1px solid;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+header .brand {
+    font-weight: bold;
+    font-size: 1.25rem;
+    text-decoration: none;
+}
+
+header nav {
+    display: flex;
+    gap: 1rem;
+}
+
+h1 {
+    margin-top: 1.5rem;
+}
+
+ul {
+    padding-left: 1.25rem;
+}
+
+article {
+    white-space: pre-wrap;
+    font-family: Georgia, serif;
+    font-size: 1.1rem;
+}
+
+a {
+    color: inherit;
+}
+
+input[type="search"] {
+    width: 100%;
+    padding: 0.5rem;
+    font: inherit;
+}
+
+.result {
+    margin: 1rem 0;
+    border-bottom: 1px solid;
+    padding-bottom: 1rem;
+}
+
+.result h3 {
+    margin: 0;
+}
+
+.result .meta {
+    color: inherit;
+    opacity: 0.7;
+    margin: 0.25rem 0;
+    font-size: 0.9rem;
+}
+
+.result .excerpt {
+    margin: 0.25rem 0;
+}
+
+.load-more-row {
+    list-style: none;
+    margin-top: 0.5rem;
+}
+
+.load-more-row button,
+button {
+    font: inherit;
+    cursor: pointer;
+}
+
+button.link {
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+    text-decoration: underline;
+}
+
+form.inline {
+    display: inline;
+}
+
+label {
+    display: inline-block;
+    margin-bottom: 0.25rem;
+}
+
+input[type="text"],
+input[type="password"] {
+    font: inherit;
+    padding: 0.25rem;
+}
+
+.error {
+    color: #c00;
+}

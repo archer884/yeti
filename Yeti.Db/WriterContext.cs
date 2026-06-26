@@ -68,6 +68,9 @@ public class WriterContext(DbContextOptions<WriterContext> options) : DbContext(
 
     private static void Seed(ModelBuilder builder)
     {
+        // Fixed timestamps so the seed is deterministic (EF Core 10 rejects dynamic HasData values).
+        var seeded = new DateTimeOffset(2024, 3, 13, 2, 52, 51, TimeSpan.Zero);
+
         builder.Entity<Writer>().HasData(new Writer
         {
             Id = 1,
@@ -89,6 +92,8 @@ public class WriterContext(DbContextOptions<WriterContext> options) : DbContext(
             WriterId = 1,
             Title = "The Song of Hiawatha",
             Blurb = "An old poem",
+            Created = seeded,
+            Updated = seeded,
         });
 
         var deletedFragment = new Fragment
@@ -99,6 +104,8 @@ public class WriterContext(DbContextOptions<WriterContext> options) : DbContext(
             Content = "By the shore of Gitche Gumbee,\nBy the shining Big-Sea-Water,\nAt the doorway of his wigwam,\nIn the pleasant Summer morning,\nHiawatha stood and waited.",
             SortBy = 1.0,
             SoftDelete = true,
+            Created = seeded,
+            Updated = seeded,
         };
 
         var fragment = new Fragment
@@ -108,6 +115,8 @@ public class WriterContext(DbContextOptions<WriterContext> options) : DbContext(
             ManuscriptId = 1,
             Content = "By the shore of Gitche Gumee,\nBy the shining Big-Sea-Water,\nAt the doorway of his wigwam,\nIn the pleasant Summer morning,\nHiawatha stood and waited.",
             SortBy = 1.0,
+            Created = seeded,
+            Updated = seeded,
         };
 
         builder.Entity<Fragment>().HasData(deletedFragment, fragment);

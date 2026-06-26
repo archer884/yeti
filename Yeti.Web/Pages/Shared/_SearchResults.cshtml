@@ -1,0 +1,26 @@
+@model Yeti.Web.SearchResultsPage
+
+@foreach (var snapshot in Model.Items)
+{
+    <article class="result">
+        <h3><a href="/Read/@snapshot.Id">@(snapshot.Heading ?? snapshot.Title)</a></h3>
+        @if (snapshot.AuthorName is not null)
+        {
+            <p class="meta">@snapshot.AuthorName</p>
+        }
+        <p class="excerpt">@snapshot.Excerpt</p>
+    </article>
+}
+@if (Model.Items.Count == 0)
+{
+    <p>No results.</p>
+}
+@if (Model.LoadMoreUrl is string url)
+{
+    <div class="load-more-row">
+        <button type="button"
+                hx-get="@url"
+                hx-target="closest .load-more-row"
+                hx-swap="outerHTML">Load more</button>
+    </div>
+}

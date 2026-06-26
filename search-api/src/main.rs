@@ -1,17 +1,22 @@
-use std::{env, thread, time::Duration};
+use std::{env, sync::Arc, thread, time::Duration};
 
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::get,
+};
 use diesel::{
-    r2d2::{self, ConnectionManager, Pool},
     PgConnection,
+    r2d2::{self, ConnectionManager, Pool},
 };
 use flume::Sender;
 use mimalloc::MiMalloc;
-use rocket::{get, post, routes, serde::json::Json, State};
 use search::{
     db,
     index::{FragmentIndex, FragmentWriter},
     model::{FragmentInfo, SearchOperation},
 };
+use serde::Deserialize;
 
 mod logging;
 
@@ -21,15 +26,15 @@ const INDEX_DIRECTORY: &str = "INDEX_DIRECTORY";
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 
-#[rocket::main]
-async fn main() -> Result<(), rocket::Error> {
+#[tokio::main]
+async fn main() {
     dotenvy::dotenv().ok();
     logging::initialize();
 
     let manager = r2d2::ConnectionManager::<PgConnection>::new(env::var(DATABASE_URL).unwrap());
     let pool = r2d2::Pool::builder().build(manager).unwrap();
     let (tx, rx) = flume::unbounded::<SearchOperation>();
-    let index = FragmentIndex::new(env::var(INDEX_DIRECTORY).unwrap()).unwrap();
+    let index = Arc::new(FragmentIndex::new(env::var(INDEX_DIRECTORY).unwrap()).unwrap());
 
     let mut writer = index.writer().unwrap();
 
@@ -59,35 +64,63 @@ async fn main() -> Result<(), rocket::Error> {
     });
 
     let commit_tx = tx.clone();
-    let _commiter = thread::spawn(move || loop {
-        thread::sleep(Duration::from_secs(90));
-        commit_tx.send(SearchOperation::Commit).unwrap();
+    let _commiter = thread::spawn(move || {
+        loop {
+            thread::sleep(Duration::from_secs(90));
+            commit_tx.send(SearchOperation::Commit).unwrap();
+        }
     });
 
-    let _rocket = rocket::build()
-        .manage(tx)
-        .manage(index)
-        .mount("/", routes![add_remove, query])
-        .launch()
-        .await?;
+    let app = Router::new()
+        .route("/", get(query).post(add_remove))
+        .with_state(AppState { index, sender: tx });
 
-    Ok(())
+    let bind = env::var("BIND_ADDRESS").unwrap_or_else(|_| "127.0.0.1:8000".to_string());
+    tracing::info!("search-api listening on {bind}");
+    let listener = tokio::net::TcpListener::bind(&bind).await.unwrap();
+    axum::serve(listener, app).await.unwrap();
 }
 
-#[get("/?<q>&<p>")]
-fn query(q: String, p: Option<usize>, index: &State<FragmentIndex>) -> Json<Vec<FragmentInfo>> {
-    let results = index.search(&q, p.unwrap_or(0)).unwrap();
+#[derive(Clone)]
+struct AppState {
+    index: Arc<FragmentIndex>,
+    sender: Sender<SearchOperation>,
+}
+
+#[derive(Deserialize)]
+struct SearchParams {
+    q: String,
+    p: Option<usize>,
+}
+
+async fn query(
+    State(state): State<AppState>,
+    Query(params): Query<SearchParams>,
+) -> Json<Vec<FragmentInfo>> {
+    // Tantivy search is blocking; run it off the async worker so it can't stall the runtime.
+    let index = state.index.clone();
+    let results =
+        tokio::task::spawn_blocking(move || index.search(&params.q, params.p.unwrap_or(0)))
+            .await
+            .unwrap()
+            .unwrap();
+
     Json(results)
 }
 
-#[post("/?<a>&<r>")]
-fn add_remove(a: Option<i64>, r: Option<i64>, sender: &State<Sender<SearchOperation>>) {
-    if let Some(id) = r {
-        sender.send(SearchOperation::Remove(id)).unwrap();
+#[derive(Deserialize)]
+struct AddRemoveParams {
+    a: Option<i64>,
+    r: Option<i64>,
+}
+
+async fn add_remove(State(state): State<AppState>, Query(params): Query<AddRemoveParams>) {
+    if let Some(id) = params.r {
+        let _ = state.sender.send(SearchOperation::Remove(id));
     }
 
-    if let Some(id) = a {
-        sender.send(SearchOperation::Index(id)).unwrap();
+    if let Some(id) = params.a {
+        let _ = state.sender.send(SearchOperation::Index(id));
     }
 }
 
@@ -101,11 +134,13 @@ fn update_fragment(
     if let Some(fragment) = db::by_id(id, cx) {
         writer.update(&fragment)?;
     }
+    writer.commit()?;
     Ok(())
 }
 
 fn remove_fragment(id: i64, writer: &mut FragmentWriter) -> anyhow::Result<()> {
     tracing::debug!("remove fragment id:{id}");
     writer.remove(id)?;
+    writer.commit()?;
     Ok(())
 }

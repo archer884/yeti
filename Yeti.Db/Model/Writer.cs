@@ -11,7 +11,7 @@ public class Writer
     public string Username { get; init; } = null!;
 
     [Length(2, 256)]
-    public string? AuthorName { get; init; }
+    public string? AuthorName { get; set; }
 
     public Login Login { get; init; } = null!;
     public List<Manuscript> Manuscripts { get; set; } = [];

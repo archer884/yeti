@@ -1,0 +1,1 @@
+:root{--lightningcss-light:initial;--lightningcss-dark: ;color-scheme:light dark}@media (prefers-color-scheme:dark){:root{--lightningcss-light: ;--lightningcss-dark:initial}}body{margin:0}main.svelte-1n46o8q{max-width:40rem;margin:4rem auto;padding:0 1rem;font-family:system-ui,sans-serif}

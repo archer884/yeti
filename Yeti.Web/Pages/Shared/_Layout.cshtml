@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Yeti</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <script src="~/lib/htmx.min.js" asp-append-version="true" defer></script>
+</head>
+<body>
+    <header>
+        <a href="/" class="brand">Yeti</a>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/Search">Search</a>
+            <a href="/author/">Authors</a>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <form method="post" asp-page="/Logout" class="inline">
+                    <button type="submit" class="link">Sign out</button>
+                </form>
+            }
+            else
+            {
+                <a href="/Login">Sign in</a>
+            }
+        </nav>
+    </header>
+    <main>
+        @RenderBody()
+    </main>
+</body>
+</html>

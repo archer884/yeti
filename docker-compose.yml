@@ -1,0 +1,137 @@
+name: yeti
+
+x-connection-string: &cs "Host=db;Port=5432;Database=yeti;Username=yetiuser;Password=yetipassword;"
+x-database-url: &dburl "postgres://yetiuser:yetipassword@db:5432/yeti"
+
+services:
+  db:
+    image: postgres:17
+    container_name: yeti-db
+    environment:
+      POSTGRES_USER: yetiuser
+      POSTGRES_PASSWORD: yetipassword
+      POSTGRES_DB: yeti
+    ports:
+      - "5432:5432"
+    volumes:
+      - yeti-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yetiuser -d yeti"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  # One-shot: applies EF migrations (schema + seed) before the apps start.
+  migrate:
+    build:
+      context: .
+      dockerfile: Yeti.Db/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      CONNECTION_STRING: *cs
+
+  # One-shot: rebuilds the Tantivy index from the DB before search-api starts — the index
+  # always matches the data, and search-api doesn't hold the writer lock yet.
+  reindex:
+    build:
+      context: .
+      dockerfile: search-api/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: *dburl
+      INDEX_DIRECTORY: /index
+    volumes:
+      - yeti-index:/index
+    entrypoint: ["search-cli", "initialize"]
+
+  search-api:
+    build:
+      context: .
+      dockerfile: search-api/Dockerfile
+    container_name: yeti-search
+    depends_on:
+      db:
+        condition: service_healthy
+      reindex:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: *dburl
+      INDEX_DIRECTORY: /index
+      BIND_ADDRESS: 0.0.0.0:8000
+    volumes:
+      - yeti-index:/index
+    ports:
+      - "8000:8000"
+
+  api:
+    build:
+      context: .
+      dockerfile: Yeti.Api/Dockerfile
+    container_name: yeti-api
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      search-api:
+        condition: service_started
+    environment:
+      ConnectionStrings__WriterContext: *cs
+      Search__Url: "http://search-api:8000"
+
+  web:
+    build:
+      context: .
+      dockerfile: Yeti.Web/Dockerfile
+    container_name: yeti-web
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      search-api:
+        condition: service_started
+    environment:
+      ConnectionStrings__WriterContext: *cs
+      Search__Url: "http://search-api:8000"
+
+  # Single front door: routes /api/* -> api, everything else -> web. Same-origin for the
+  # SPA, so no CORS. Plain HTTP on :80 for local; swap the site label in Caddyfile for a
+  # real domain to get automatic HTTPS.
+  caddy:
+    image: caddy:2-alpine
+    container_name: yeti-caddy
+    depends_on:
+      - api
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+  # Opt-in tooling (one-off index rebuilds): docker compose --profile tools run --rm search-cli initialize
+  search-cli:
+    build:
+      context: .
+      dockerfile: search-api/Dockerfile
+    profiles: ["tools"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: *dburl
+      INDEX_DIRECTORY: /index
+    volumes:
+      - yeti-index:/index
+    entrypoint: ["search-cli"]
+
+volumes:
+  yeti-db:
+  yeti-index:
+  caddy_data:
+  caddy_config:

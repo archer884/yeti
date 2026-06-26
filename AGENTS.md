@@ -11,20 +11,21 @@ own status notes.
 
 ## Polyglot monorepo
 
-The project is a .NET backend, a Rust search service, and a Vue frontend in one repo.
+The project is a .NET backend + reader site, a Rust search service, and a Svelte author SPA in one repo.
 
 | Path | Lang | Role |
 |------|------|------|
-| `Yeti.Api/` | C# (.NET 10) | ASP.NET Core Web API — the backend |
+| `Yeti.Api/` | C# (.NET 10) | ASP.NET Core Web API — the JSON backend (JWT bearer) |
+| `Yeti.Web/` | C# (.NET 10) | Server-rendered reader site (Razor Pages + htmx, cookie auth) |
 | `Yeti.Core/` | C# (.NET 10) | Domain logic: services, providers, DTOs, config |
 | `Yeti.Db/` | C# (.NET 10) | EF Core data layer (PostgreSQL) |
 | `Yeti.Test/` | C# (.NET 10) | xUnit tests |
 | `search/` | Rust (2024) | Tantivy full-text index library |
-| `search-api/` | Rust | Rocket HTTP server wrapping `search/` |
+| `search-api/` | Rust | axum HTTP server wrapping `search/` |
 | `search-cli/` | Rust | CLI to rebuild/query the index |
 | `yeti-pw/` | Rust | Utility to argon2-hash a password |
 | `yeti-seed/` | Rust | CLI to bulk-import Project Gutenberg texts via the API |
-| `yeti-vue/` | TS/Vue 3 | Frontend (currently just the Vite scaffold) |
+| `yeti-svelte/` | TS/Svelte 5 | Author SPA, built to `/author/` (Vite, base `'/author/'`) |
 
 ## Prerequisites & tooling
 
@@ -33,18 +34,55 @@ The project is a .NET backend, a Rust search service, and a Vue frontend in one 
   `-Ctarget-cpu=native` and `lld` linker; release profile uses `lto`, single codegen unit,
   `panic=abort`.
 - `node`/`npm` are **installed via nvm** and NOT on the default PATH. Prefix shell commands with
-  `source ~/.nvm/nvm/nvm.sh &&` (node v24) when running anything in `yeti-vue/`.
-- PostgreSQL. The dev DB is remote; connection strings live in `.env` (gitignored) and in
-  `Yeti.Api/appsettings.json` (committed, contains dev secrets).
+  `source ~/.nvm/nvm.sh &&` (node v24) when running anything in `yeti-svelte/`.
+- PostgreSQL. The dev DB runs in Docker via `docker compose up -d` (see `docker-compose.yml` —
+  `postgres:17`, user `yetiuser`, db `yeti`, host port 5432; data in the `yeti-db` named volume).
+  Connection strings live in `.env` (gitignored, for the Rust side + EF design-time factory) and in
+  `Yeti.Api/appsettings.json` / `Yeti.Web/appsettings.json` (committed, runtime — both point at
+  `localhost:5432`).
 
 ## Commands
+
+### Database (Docker, run from repo root)
+
+```sh
+docker compose up -d                                                          # start postgres
+docker exec yeti-db psql -U yetiuser -d yeti -c "SELECT \"Id\",\"Username\" FROM \"Writers\";"  # quick query
+dotnet ef database update --project Yeti.Db -- .env                           # apply migrations
+cargo run -p search-cli -- initialize                                         # rebuild the Tantivy index
+```
+
+### Full stack (Docker Compose)
+
+Each service has a Dockerfile (`Yeti.Api/`, `Yeti.Web/`, `search-api/`, `Yeti.Db/`) and they're
+wired together in `docker-compose.yml`. Services address each other by service name over the
+compose network (e.g. the apps' `Search__Url` is `http://search-api:8000`, and the DB host is
+`db`). **Caddy is the single front door** (`Caddyfile` + the `caddy` service): it listens on host
+`80`/`443` and routes `/api/*` → `api` (stripping the prefix) and everything else → `web`, so the SPA
+and the API are same-origin and there is no CORS. `web` and `api` are internal (no host ports);
+search-api `8000` and postgres `5432` are still published for tooling.
+
+```sh
+docker compose up -d --build                                                  # build + run everything
+docker compose logs -f api web                                                # tail app logs
+docker compose down                                                           # stop (named volumes persist)
+```
+
+`migrate` is a one-shot service that applies EF migrations (incl. seed) before the apps start, and
+reads `CONNECTION_STRING` from the environment. `reindex` is another one-shot — it runs
+`search-cli initialize` against the `yeti-index` volume *before* `search-api` starts (so the index
+always matches the DB and there's no writer-lock contention); this rebuilds the full Tantivy index
+from Postgres on every `up`. `search-cli` is behind the `tools` profile for ad-hoc queries/manual
+rebuilds (it shares the `yeti-index` volume; stop `search-api` first since it holds the writer lock).
+The `WriterContextFactory` reads `CONNECTION_STRING` from the env first, then falls back to `.env`.
 
 ### .NET (run from repo root)
 
 ```sh
 dotnet build Yeti.sln              # build the whole solution
 dotnet test Yeti.sln               # run xUnit tests
-dotnet run --project Yeti.Api      # run the API (dev: prints a 7-day token on startup)
+dotnet run --project Yeti.Api      # run the API, port 5000 (dev: prints a 7-day token on startup)
+dotnet run --project Yeti.Web      # run the reader site, port 5002
 dotnet watch run --project Yeti.sln  # hot-reload build (matches .vscode/tasks.json)
 ```
 
@@ -62,43 +100,75 @@ cargo run -p yeti-seed -- "<gutenberg-path>" "<auth-token>"
 `search-api` and `search-cli` read `DATABASE_URL` and `INDEX_DIRECTORY` from `.env` (via
 `dotenvy`). The index directory defaults to `./.yeti-index`.
 
-### Vue (run from `yeti-vue/`, needs nvm sourced)
+### Svelte (run from `yeti-svelte/`, needs nvm sourced)
 
 ```sh
-npm run dev         # vite dev server
-npm run build       # type-check + production build
-npm run type-check  # vue-tsc
-npm run lint        # oxlint + eslint (with --fix)
+npm run dev         # vite dev server (http://localhost:5173/author/)
+npm run build       # production build -> Yeti.Web/wwwroot/author/
+npm run check       # svelte-check (type-check)
 npm run format      # prettier
 ```
+
+`npm run build` emits straight into `Yeti.Web/wwwroot/author/` (vite `build.outDir`), so after a
+build `dotnet run --project Yeti.Web` serves the SPA at `/author`. In dev the SPA runs on Vite and
+calls the API via same-origin `/api/*` paths — Vite's dev server proxies `/api` to
+`http://localhost:5000` (stripping the prefix), mirroring the Caddy edge in production, so there's
+no CORS in either environment.
 
 ## Architecture
 
 ### .NET layering
 
-`Yeti.Db` (no internal deps) -> `Yeti.Core` (depends on Db) -> `Yeti.Api` (depends on Core + Db).
-`Yeti.Test` references `Yeti.Core` only.
+`Yeti.Db` (no internal deps) -> `Yeti.Core` (depends on Db) -> `Yeti.Api`/`Yeti.Web` (each depends
+on Core + Db). `Yeti.Test` references `Yeti.Core` only.
 
 **`Yeti.Api`** — entry point `Program.cs`. Uses **Lamar** as the DI container
 (`ServiceRegistry`, registered via `ConfigureServices`). JWT bearer auth; Swagger only in
 Development. The environment is driven by the `"Environment"` key in `appsettings.json` (the
-code sets `ASPNETCORE_ENVIRONMENT` from it). `WriterContext` is a pooled Npgsql DbContext.
+code sets `ASPNETCORE_ENVIRONMENT` from it). `WriterContext` is a pooled Npgsql DbContext. Behind
+Caddy it's reached same-origin at `/api/*` (the prefix is stripped at the edge), so there is no
+CORS policy.
 
 - Controllers live in `Yeti.Api/Controller/` and derive from `YetiController`, which exposes
-  `UserId` (parsed from the JWT `"id"` claim). Write endpoints are `[Authorize]`; read/search
-  endpoints in `LoginController`, `ReadController`, `SearchController`, `TestController` are
-  anonymous.
+  `UserId` (via the shared `ClaimsPrincipalExtensions.GetUserId` in `Yeti.Core`, which reads the
+  `ClaimTypes.NameIdentifier` claim emitted by `TokenService`). Write endpoints are `[Authorize]`;
+  read/search endpoints in `LoginController`, `ReadController`, `SearchController`,
+  `TestController` are anonymous.
 - `TokenService` (in `Yeti.Api/Service/`) generates JWTs. Defaults: access 15 min, refresh
   30 days. On dev startup the API prints a 7-day token to stdout for easy testing.
 - Config helpers in `Yeti.Api/Config/`: `ConfigurationExtensions` (auth + Swagger setup),
   `TokenOptions`.
 
+**`Yeti.Web`** — the **server-rendered reader site** (Razor Pages + htmx, port 5002). This is the
+bimodal "reader" half of the frontend: anonymous visitors and crawlers get fast, SEO-friendly HTML
+with no client framework. Entry point `Program.cs`; uses **Lamar** like `Yeti.Api`, **cookie**
+auth (logged-in readers), and a pooled `WriterContext`. Pages live in `Yeti.Web/Pages/` and call
+`Yeti.Core` services/providers directly (no HTTP hop):
+- `Index` (home: recently-added/updated via `RecentService`, plus a "Your manuscripts" section for
+  logged-in readers via `ManuscriptSummaryProvider.ByWriterId`), `Manuscript` (landing), `Read`
+  (a fragment via `FragmentDetailProvider`), `Search` (full-text via `SearchService` → Rust
+  search-api), `Tag`/`Tags` (browse by tag via `TagSearchService`), `Login`/`Logout` (cookie auth).
+- htmx (`wwwroot/lib/htmx.min.js`) drives interactivity: live search (`hx-get` to a `?handler=`
+  partial), and **load-more** pagination on home/search/tag lists (named handlers return shared
+  partials `_ManuscriptListPage`/`_SearchResults`; the load-more button swaps its own row via
+  `hx-target="closest .load-more-row"` + `hx-swap="outerHTML"`).
+- Full-text search needs the Rust search-api; `Program.cs` wires `IndexOptions`/`IndexClient`
+  (`AddConfigurable<IndexOptions>()` + a typed `HttpClient<IndexClient>`), and `Search:Url` lives
+  in `appsettings.json`.
+- The **author SPA is mounted at `/author`** via `MapFallbackToFile("/author/{*path}", ...)`,
+  serving the production build of `yeti-svelte` from `wwwroot/author/`.
+- **Reader auth** is cookie-based (the `"Cookie"` scheme): `Login` validates via the existing
+  `LoginService`/`HashProvider` and calls `HttpContext.SignInAsync` with an `"id"` claim (the
+  writer id); `Logout` signs out. Forms use Razor Pages' auto antiforgery. Reader pages stay
+  anonymous — the cookie only gates the home-page personalization hook (a fuller preference model
+  for favorite tags/authors is a future task). Contrast with `Yeti.Api`, which uses JWT bearer.
+
 **`Yeti.Core`** — all business logic.
 - `Service/` — `ManuscriptService`, `FragmentService`, `LoginService`, `RecentService`,
   `SearchService`, `TagService`, `TagSearchService`, `IndexingService` (+ `IIndexingService`),
   `IndexClient` (HttpClient to the Rust search-api), and the static `FragmentExtensions`.
-- `Provider/` — read-side helpers (`ManuscriptSummaryProvider`, `FragmentSummaryProvider`) and
-  `HashProvider` (Argon2id via the `Geralt` package).
+- `Provider/` — read-side helpers (`ManuscriptSummaryProvider`, `FragmentSummaryProvider`,
+  `FragmentDetailProvider`) and `HashProvider` (Argon2id via the `Geralt` package).
 - `Model/` — request/response DTOs, almost all `record`s (`CreateManuscript`,
   `UpdateFragment`, `ManuscriptSummary`, `Snapshot`, `LoginRequest`, `ModifyTag`, etc.).
 - `Config/` — options-pattern plumbing: `IConfigurable` + a generic `Configure<T>` that binds
@@ -112,9 +182,12 @@ code sets `ASPNETCORE_ENVIRONMENT` from it). `WriterContext` is a pooled Npgsql 
 - `Remove<T>` performs a **soft delete** (sets `SoftDelete = true`) for `ISoftDeletable`
   entities instead of hard-deleting.
 `WriterContext.OnModelCreating` configures relationships, indexes, and `HasData` seed data
-(the `longfellow` demo writer/login/manuscript/fragments). EF migrations live in
+(the `longfellow` demo writer/login/manuscript/fragments). The seed uses fixed timestamps so the
+model is deterministic (EF Core 10 rejects dynamic `HasData` values). EF migrations live in
 `Yeti.Db/Migrations/`; design-time factory `WriterContextFactory` reads `CONNECTION_STRING`
-from `.env` (pass the `.env` path or run from repo root).
+from `.env` and strips surrounding quotes. Apply/update with
+`dotnet ef database update --project Yeti.Db -- <path-to-.env>` (pass the repo-root `.env`
+explicitly, since the factory resolves it relative to the project dir).
 
 ### Rust search
 
@@ -122,7 +195,7 @@ from `.env` (pass the `.env` path or run from repo root).
 for re-indexing). `schema.rs` is auto-generated by `diesel-cli` (note: DB column names are
 **PascalCase**, e.g. `Id`, `WriterId`).
 
-`search-api/` is a **Rocket** server exposing:
+`search-api/` is an **axum** (tokio/hyper) server exposing:
 - `GET /?q=<query>&p=<page>` — search fragments, returns `FragmentInfo` JSON.
 - `POST /?a=<id>&r=<id>` — add (`a`) and/or remove (`r`) a fragment by id.
 
@@ -131,11 +204,14 @@ every 90 s. Uses `mimalloc` as the global allocator. The C# side talks to this s
 `IndexClient`; `IndexingService` fires index updates as best-effort, fire-and-forget `Task.Run`s
 (failures are logged, not thrown).
 
-### Vue frontend
+### Svelte frontend (author SPA)
 
-Vue 3 + Vite 6 + Pinia + TypeScript. `@` is aliased to `./src`. Largely the default scaffold
-right now — real UI work has not started (it replaced an earlier `yeti-remix` frontend; see
-git history).
+Svelte 5 + Vite + TypeScript (runes for reactivity, no external state lib). Vite `base` is `'/author/'`
+and `build.outDir` is `../Yeti.Web/wwwroot/author`, so `npm run build` lands the production bundle
+where `Yeti.Web` serves it at `/author`. Largely the default scaffold right now — real UI work
+has not started (it replaced an earlier Vue frontend, which itself replaced `yeti-remix`; see git
+history). It consumes the `Yeti.Api` JSON endpoints with JWT bearer, in contrast to `Yeti.Web`'s
+server-rendered reader pages — this is the intended **bimodal** split (SPA for authors, SSR for readers).
 
 ## Domain model & key concepts
 
@@ -165,11 +241,13 @@ git history).
 
 ## Gotchas
 
-- `node`/`npm` are **not on PATH** — source nvm before any `yeti-vue` command.
+- `node`/`npm` are **not on PATH** — source nvm before any `yeti-svelte` command.
 - `.env` is gitignored. It must define `CONNECTION_STRING` (for EF migrations via the C#
-  design factory), `DATABASE_URL` (for the Rust side), and `INDEX_DIRECTORY`.
-- `Yeti.Api/appsettings.json` is committed and contains the dev DB password and JWT key. The
-  dev API prints a long-lived token to stdout on startup — handy for local scripting.
+  design factory), `DATABASE_URL` (for the Rust side), and `INDEX_DIRECTORY`. Credentials are
+  `yetiuser`/`yetipassword` (matching `docker-compose.yml`), host `localhost:5432`.
+- `Yeti.Api/appsettings.json` and `Yeti.Web/appsettings.json` are committed and contain the dev DB
+  password (API also holds the JWT key). The dev API prints a long-lived token to stdout on
+  startup — handy for local scripting.
 - The seed user is `longfellow`. `TokenService` sets real lifetimes (access 15 min, refresh
   30 days); dev startup prints a 7-day access token for convenience.
 - Read/search endpoints are anonymous; mutating endpoints require a valid JWT whose `id` claim

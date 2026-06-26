@@ -1,0 +1,10 @@
+@page "{value}"
+@model TagModel
+@{
+    ViewData["Title"] = $"#{Model.Value}";
+}
+
+<h1>#@Model.Value</h1>
+<ul id="tag-list">
+    <partial name="_ManuscriptListPage" model="Model.List" />
+</ul>

@@ -1,0 +1,24 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home";
+}
+
+@if (Model.YourPage is not null)
+{
+    <h1>Your manuscripts</h1>
+    <p><a href="/author/">Manage your work →</a></p>
+    <ul id="your-list">
+        <partial name="_ManuscriptListPage" model="Model.YourPage" />
+    </ul>
+}
+
+<h1>Recently added</h1>
+<ul id="new-list">
+    <partial name="_ManuscriptListPage" model="Model.NewPage" />
+</ul>
+
+<h1>Recently updated</h1>
+<ul id="updated-list">
+    <partial name="_ManuscriptListPage" model="Model.UpdatedPage" />
+</ul>
